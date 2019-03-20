@@ -18,8 +18,8 @@ function Usage()
     echo "checker  some_file.tar.gz the_needed_output"
 }
 
-INPUT_TAR=$1
-GOLDEN=$2
+INPUT_TAR=`realpath $1`
+GOLDEN=`realpath $2`
 if [ -z "$GOLDEN" ]; then
  Usage
  exit 1
