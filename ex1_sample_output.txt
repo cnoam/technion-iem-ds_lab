@@ -1,0 +1,29 @@
+Question 1:
+
+Men:
+AGE: 728, 45.5, 47.5
+EARNINGS: 74.9571, 4.68482, 4.55613
+HOURS: 698, 43.625, 42
+WEEK: 831, 51.9375, 52
+
+Women:
+AGE: 480, 48, 43
+EARNINGS: 46.0539, 4.60539, 4.58862
+HOURS: 411, 41.1, 40
+WEEK: 520, 52, 52
+
+All:
+AGE: 1208, 46.4615, 45
+EARNINGS: 121.011, 4.65427, 4.55613
+HOURS: 1109, 42.6538, 40
+WEEK: 1351, 51.9615, 52
+
+Question 2:
+
+Married Women:
+if 0<Y<10, then Z and W are:4.34242, 4.34242
+if 11<Y<20, then Z and W are:4.66948, 4.67667
+
+Unmarried Women:
+if 0<Y<10, then Z and W are:4.69897, 4.69897
+if 11<Y<20, then Z and W are:4.49782, 4.49782
