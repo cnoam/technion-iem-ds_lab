@@ -15,11 +15,12 @@
 function Usage()
 {
     echo "Usage:"
-    echo "checker  some_file.tar.gz the_needed_output"
+    echo "checker  some_file.tar.gz input_data_file the_needed_output"
 }
 
 INPUT_TAR=`realpath $1`
-GOLDEN=`realpath $2`
+INPUT_DATA=`realpath $2`
+GOLDEN=`realpath $3`
 if [ -z "$GOLDEN" ]; then
  Usage
  exit 1
@@ -32,8 +33,8 @@ cd testdir
 tar xf $INPUT_TAR
 cmake .
 make
-
 echo ----------- compilation OK
+
 # run the exe. what's its name?
 EXE=`find .  -maxdepth 1 -type f   -executable`
 num_exe=`echo $EXE | wc -l`
