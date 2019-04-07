@@ -18,13 +18,14 @@ function Usage()
     echo "checker  some_file.tar.gz input_data_file the_needed_output"
 }
 
-INPUT_TAR=`realpath $1`
-INPUT_DATA=`realpath $2`
-GOLDEN=`realpath $3`
-if [ -z "$GOLDEN" ]; then
+if [ -z "$3" ]; then
  Usage
  exit 1
 fi
+
+INPUT_TAR=`realpath $1`
+INPUT_DATA=`realpath $2`
+GOLDEN=`realpath $3`
 
 pushd /tmp
 rm -rf testdir
@@ -37,12 +38,13 @@ echo ----------- compilation OK
 
 # run the exe. what's its name?
 EXE=`find .  -maxdepth 1 -type f   -executable`
-num_exe=`echo $EXE | wc -l`
+num_exe=`echo $EXE | wc -w`
 if [ $num_exe -ne 1 ]; then
     echo ERROR: There should be exactly one executable file in this dir
+    echo You have these files:    $EXE
     exit 2
 fi
-./$EXE > output
+./$EXE $INPUT_DATA > output
 set +e
 cmp output $GOLDEN
 if [ $? -ne 0 ]; then
