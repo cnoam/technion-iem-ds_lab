@@ -27,7 +27,7 @@ INPUT_TAR=`realpath $1`
 INPUT_DATA=`realpath $2`
 GOLDEN=`realpath $3`
 
-pushd /tmp
+pushd ./tmp
 rm -rf testdir
 mkdir testdir
 cd testdir
