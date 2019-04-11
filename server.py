@@ -52,11 +52,17 @@ def upload_file(number):
             try:
                 the_reply =  handle_file(saved_file_name,number)
             finally:
-                pass #os.unlink(saved_file_name)
+                os.unlink(saved_file_name)
             return  the_reply
             #return redirect(url_for('upload_file', filename=filename))
     return render_template('upload_homework.html', hw_number = number)
 
+def wrap_html_source(text):
+    """
+    wrap the text with html tags to force the browser show the code as was created without corrupting it
+    """
+
+    return "<html><pre><code> " + text +  "</code></pre></html>"
 
 
 def handle_file(file_name, ex_number):
@@ -68,7 +74,6 @@ def handle_file(file_name, ex_number):
     timeout = 10
     completed_proc = None
     try:
-        print("args:" + file_name + str(ex_number))
         reference_output = "./data/ref_" + str(ex_number)+"_output"
         reference_input  = "./data/ref_"+ str(ex_number)+"_input"
         print("ref files:  "+reference_input+","+reference_output)
@@ -85,7 +90,7 @@ def handle_file(file_name, ex_number):
     except subprocess.CalledProcessError as ex:
         message = 'Your code failed. Please check the reported output\n\n' + completed_proc.stderr.decode('utf-8')
 
-    return message
+    return wrap_html_source(message)
 
 if __name__ == '__main__':
    app.run(host="0.0.0.0", port=80)
