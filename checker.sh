@@ -26,7 +26,7 @@ fi
 INPUT_TAR=`realpath $1`
 INPUT_DATA=`realpath $2`
 GOLDEN=`realpath $3`
-TESTDIR=`mkdir -d`
+TESTDIR=`mktemp -d`
 pushd ./tmp
 rm -rf $TESTDIR
 mkdir $TESTDIR
@@ -45,7 +45,8 @@ if [ $num_exe -ne 1 ]; then
     echo You have these files:    $EXE
     exit 2
 fi
-./$EXE $INPUT_DATA > output
+echo --- about to run: $EXE $INPUT_DATA
+$EXE $INPUT_DATA > output
 set +e
 cmp output $GOLDEN
 if [ $? -ne 0 ]; then
