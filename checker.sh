@@ -26,15 +26,16 @@ fi
 INPUT_TAR=`realpath $1`
 INPUT_DATA=`realpath $2`
 GOLDEN=`realpath $3`
-
+TESTDIR=`mkdir -d`
 pushd ./tmp
-rm -rf testdir
-mkdir testdir
-cd testdir
+rm -rf $TESTDIR
+mkdir $TESTDIR
+cd $TESTDIR
 tar xf $INPUT_TAR
 cmake .
 make
 echo ----------- compilation OK
+# do not remove the tempdir, to allow for postmortem
 
 # run the exe. what's its name?
 EXE=`find .  -maxdepth 1 -type f   -executable`

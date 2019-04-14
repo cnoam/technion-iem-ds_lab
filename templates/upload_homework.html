@@ -1,8 +1,21 @@
 <!doctype html>
 <html>
 <body>
-    <title>Upload new File</title>
-    <h1>Upload new File for excercise {{hw_number}}</h1>
+    <title>Upload your homework for self checking</title>
+    <h1>Course 94201: Upload new File for exercise {{hw_number}}</h1>
+    <p>This tool accepts ONLY files of type tag.gz, with a size limit.</p>
+    After uploading, the server will run the checker with your file. <br>
+    The checker will try to build your code (if needed) and run it with input.<br>
+    The output of your code will then be compared to the output we got from the reference (secret) implementation.<br>
+    If the outputs are identical, you will get a "well done!" message;<br>
+    otherwise, you will see the output of the checker, to help you debug what went wrong.<br>
+<br>
+    At this time, this tool is for your checking yourself. You can use it as many times you need<br>
+<br>
+    If you want to see the server's code: <a href="https://github.com/noam1023/technion-iem-ds_lab">HERE</a><br>
+    <br>
+    <strong>It does NOT replace submitting to Moodle!</strong>
+<br><br>
     <form method=post enctype=multipart/form-data>
       <input type=file name=file>
       <input type=submit value=Upload>
