@@ -25,12 +25,20 @@ def allowed_file(filename):
 def index():
     return render_template('index.html')
 
-@app.route('/submit/hw/<int:number>', methods=['GET', 'POST'])
-def upload_file(number):
+
+# noinspection PyPackageRequirements
+@app.route('/submit/<ex_type>/<int:number>', methods=['GET', 'POST'])
+def upload_file(ex_type, number):
+    return _upload_file(ex_type, number)
+
+
+def _upload_file(ex_type, number, compare_to_golden = False):
     """ upload homework 'number'
         call a checker and return the result.
         Block here until the checker completes.
     """
+    if not ex_type in ('lab','hw'):
+        return (400, "please use {lab|hw} in the URL")
     if request.method == 'POST':
         # check if the post request has the file part
         if 'file' not in request.files:
@@ -50,12 +58,19 @@ def upload_file(number):
             file.save(saved_file_name)
 
             try:
-                the_reply =  handle_file(saved_file_name,number)
+                postfix = "GOLD" if compare_to_golden else None
+                the_reply =  handle_file(saved_file_name,number, postfix)
             finally:
                 os.unlink(saved_file_name)
+		
             return  the_reply
             #return redirect(url_for('upload_file', filename=filename))
     return render_template('upload_homework.html', hw_number = number)
+
+@app.route('/submit/goldi/<ex_type>/<int:number>', methods=['GET', 'POST'])
+def upload_file_golden_ref(ex_type, number):
+    return _upload_file(ex_type, number, compare_to_golden=True)
+
 
 def wrap_html_source(text):
     """
@@ -65,7 +80,7 @@ def wrap_html_source(text):
     return "<html><pre><code> " + text +  "</code></pre></html>"
 
 
-def handle_file(file_name, ex_number):
+def handle_file(file_name, ex_number , postfix=None):
     """
     :param file_name: homework that need to be checked
     :param ex_number homework exercise number
@@ -73,9 +88,10 @@ def handle_file(file_name, ex_number):
     """
     timeout = 10
     completed_proc = None
+    if postfix is None: postfix = ''
     try:
-        reference_output = "./data/ref_" + str(ex_number)+"_output"
-        reference_input  = "./data/ref_"+ str(ex_number)+"_input"
+        reference_output = "./data/ref_" + str(ex_number)+"_output" + postfix
+        reference_input  = "./data/ref_"+ str(ex_number)+"_input" + postfix
         print("ref files:  "+reference_input+","+reference_output)
         #  https://medium.com/@mccode/understanding-how-uid-and-gid-work-in-docker-containers-c37a01d01cf
         completed_proc = subprocess.run( ['./checker.sh',file_name, reference_input, reference_output], check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE,timeout=timeout)
