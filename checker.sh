@@ -18,6 +18,26 @@ function Usage()
     echo "checker  some_file.tar.gz input_data_file the_needed_output"
 }
 
+# write to stdout the content of f after trimming some of the white spaces
+function canon()
+{
+	sed -r 's/\ //gm' $1
+}
+
+# compare two files , ignoring spaces that appear after ^.*:  
+function compare_ignore_spaces()
+{
+	a=$1
+	b=$2
+	A=`mktemp `
+	B=`mktemp `
+	canon $a > $A
+	canon $b > $B
+	cmp $A $B
+	R=$?
+	return  $R
+}
+
 if [ -z "$3" ]; then
  Usage
  exit 1
@@ -48,7 +68,7 @@ fi
 echo --- about to run: $EXE $INPUT_DATA
 $EXE $INPUT_DATA > output
 set +e
-cmp output $GOLDEN
+compare_ignore_spaces $output $GOLDEN
 if [ $? -ne 0 ]; then
     echo "Sorry: output is different from the required output (or some other error)"
     exit 3
