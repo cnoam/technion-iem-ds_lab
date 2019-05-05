@@ -33,7 +33,7 @@ function compare_ignore_spaces()
 	B=`mktemp `
 	canon $a > $A
 	canon $b > $B
-	cmp $A $B
+	diff $A $B
 	R=$?
 	return  $R
 }
@@ -67,8 +67,9 @@ if [ $num_exe -ne 1 ]; then
 fi
 echo --- about to run: $EXE $INPUT_DATA
 $EXE $INPUT_DATA > output
+echo --- finished the tested run.
 set +e
-compare_ignore_spaces $output $GOLDEN
+compare_ignore_spaces output $GOLDEN
 if [ $? -ne 0 ]; then
     echo "Sorry: output is different from the required output (or some other error)"
     exit 3
