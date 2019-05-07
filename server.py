@@ -32,7 +32,7 @@ def upload_file(ex_type, number):
     return _upload_file(ex_type, number)
 
 
-def _upload_file(ex_type, number, compare_to_golden = False):
+def _upload_file(ex_type, ex_number, compare_to_golden = False):
     """ upload homework 'number'
         call a checker and return the result.
         Block here until the checker completes.
@@ -58,14 +58,17 @@ def _upload_file(ex_type, number, compare_to_golden = False):
             file.save(saved_file_name)
 
             try:
-                postfix = "GOLD" if compare_to_golden else None
-                the_reply =  handle_file(saved_file_name,number, postfix)
+                postfix = "GOLD" if compare_to_golden else ""
+                reference_output = "./data/ref_{}_{}_output{}".format(ex_type,ex_number,postfix)
+                reference_input  = "./data/ref_{}_{}_input{}".format(ex_type, ex_number, postfix)
+                print("---" + reference_input + "   " + reference_output)
+                the_reply =  handle_file(saved_file_name,reference_input, reference_output)
             finally:
                 os.unlink(saved_file_name)
-		
-            return  the_reply
+
+            return the_reply
             #return redirect(url_for('upload_file', filename=filename))
-    return render_template('upload_homework.html', hw_number = number)
+    return render_template('upload_homework.html', hw_number = ex_number)
 
 @app.route('/submit/goldi/<ex_type>/<int:number>', methods=['GET', 'POST'])
 def upload_file_golden_ref(ex_type, number):
@@ -80,21 +83,19 @@ def wrap_html_source(text):
     return "<html><pre><code> " + text +  "</code></pre></html>"
 
 
-def handle_file(file_name, ex_number , postfix=None):
+def handle_file(package_under_test, reference_input, reference_output):
     """
-    :param file_name: homework that need to be checked
-    :param ex_number homework exercise number
+    :param package_under_test: name of the TAR.GZ file containing homework that need to be checked
+    :param reference_input file name of the input test vector
+    :param reference_output file name of the output test vector
     :return: html doc with the result and maybe an explanation
     """
     timeout = 10
     completed_proc = None
-    if postfix is None: postfix = ''
     try:
-        reference_output = "./data/ref_" + str(ex_number)+"_output" + postfix
-        reference_input  = "./data/ref_"+ str(ex_number)+"_input" + postfix
         print("ref files:  "+reference_input+","+reference_output)
         #  https://medium.com/@mccode/understanding-how-uid-and-gid-work-in-docker-containers-c37a01d01cf
-        completed_proc = subprocess.run( ['./checker.sh',file_name, reference_input, reference_output], check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE,timeout=timeout)
+        completed_proc = subprocess.run( ['./checker.sh',package_under_test, reference_input, reference_output], check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE,timeout=timeout)
 	#        print(completed_proc.stdout)
         if completed_proc.returncode == 0:
             message = "well Done!"
