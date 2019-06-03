@@ -69,7 +69,11 @@ echo --- about to run: $EXE $INPUT_DATA
 $EXE $INPUT_DATA > output
 echo --- finished the tested run.
 set +e
-compare_ignore_spaces output $GOLDEN
+# The direct compare is good for hw1 and 2 but not for 3
+# compare_ignore_spaces output $GOLDEN
+
+# for ex3:
+python tester_ex3.py output $GOLDEN
 if [ $? -ne 0 ]; then
     echo "Sorry: output is different from the required output (or some other error)"
     exit 3

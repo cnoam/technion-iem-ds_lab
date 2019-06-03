@@ -1,0 +1,21 @@
+SingleLink
+Cluster 6: (6,11,44,40,43,17,18,32,24,36,21), dominant label = KIRC, purity = 1
+Cluster 0: (0,3,5,12,34,42,19,41,7,46,9,4,15,35,45,10,31,33,48,30,39,20,38,14,27,8,1,16,25,37,49,22,28,23,13), dominant label = BRCA, purity = 0.514286
+Cluster 2: (2), dominant label = PRAD, purity = 1
+Cluster 26: (26,47), dominant label = COAD, purity = 1
+Cluster 29: (29), dominant label = BRCA, purity = 1
+
+CompleteLink
+Cluster 1: (1,22,49,8,28,16,25,37,6,36,11,44,40,17,43,24,18,32,21), dominant label = KIRC, purity = 0.578947
+Cluster 0: (0,5,12,41,19,34,42,3,7,46,9), dominant label = PRAD, purity = 1
+Cluster 2: (2,26,47), dominant label = COAD, purity = 0.666667
+Cluster 4: (4,15,31,20,14,30,35,45,48,27,10,33,39,38,13,23), dominant label = BRCA, purity = 1
+Cluster 29: (29), dominant label = BRCA, purity = 1
+
+AverageLink
+Cluster 6: (6,36,11,44,40,43,17,24,18,32,21), dominant label = KIRC, purity = 1
+Cluster 0: (0,5,12,19,34,42,41,3,9,7,46,4,15,35,45,31,48,30,14,20,27,10,33,39,38,8,28,13,23,1,16,25,37,49,22), dominant label = BRCA, purity = 0.514286
+Cluster 2: (2), dominant label = PRAD, purity = 1
+Cluster 26: (26,47), dominant label = COAD, purity = 1
+Cluster 29: (29), dominant label = BRCA, purity = 1
+
