@@ -12,6 +12,12 @@
 # 0     full success
 # any other value - failure of some sort
 
+echo "before"
+sleep 2
+echo "after"
+>&2 echo "to stderrrrr"
+exit 1
+
 function Usage()
 {
     echo "Usage:"
