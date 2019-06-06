@@ -5,6 +5,7 @@ import time
 
 class AsyncChecker(threading.Thread):
     timeout_sec = 3000
+
     def __init__(self, new_job, package_under_test, reference_input, reference_output):
         super().__init__(name = "job "+ str(new_job.job_id))
         self.job_status = new_job
@@ -34,12 +35,14 @@ class AsyncChecker(threading.Thread):
         # except subprocess.TimeoutExpired:
         #    message = "Your code ran for too long. timeout set to "+ str(timeout) + " seconds"
         except subprocess.CalledProcessError as ex:
-            message = 'Your code failed. Please check the reported output\n\n' + completed_proc.stderr.decode('utf-8')
+            #message = 'Your code failed. Please check the reported output\n\n' + completed_proc.stderr.decode('utf-8')
             self.job_status.completed(-100,
                                       stdout=completed_proc.stdout.decode('utf-8'),
                                       stderr=completed_proc.stderr.decode('utf-8')
                                       )
+        except Exception as ex:
+            print("This should never happen:" + str(ex))
+            self.job_status.job_completed(exit_code=-200,run_time = 0, stdout = None, stderr = None)
         finally:
            pass
-        # use wallclock time  -- just until we have the correct values from the shell.
         print("thread {} exiting".format(self.getName()))

@@ -8,7 +8,7 @@ def show_jobs(job_status_db):
     create a nice table with all the jobs past and present
     :return: html page
     """
-    s = "<h1>Jobs (runing and completed)</h1>"
+    s = "<h1>Jobs (running and completed)</h1>"
     for job in job_status_db.jobs.values():
         s += str(job) + '<br>'
     s+='<br>'

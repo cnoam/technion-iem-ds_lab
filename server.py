@@ -97,7 +97,13 @@ def get_job_stat(job_id):
     except KeyError:
         return "job id not found", 404
     
-    
+
+@app.route('/leaderboard')
+def show_leaderboard():
+    import Leaderboard
+    board = Leaderboard.Leaderboard(_job_status_db)
+    return board.show()
+
 def wrap_html_source(text):
     """
     wrap the text with html tags to force the browser show the code as was created without corrupting it
@@ -124,7 +130,7 @@ def handle_file_async(package_under_test, reference_input, reference_output):
     :param reference_output: 
     :return: html page showing link to the tracking page
     """
-    new_job = _job_status_db.add_job()
+    new_job = _job_status_db.add_job(package_under_test)
     async_task = AsyncChecker(new_job, package_under_test, reference_input, reference_output)
     async_task.start()
     return render_template('job_submitted.html', job_id= new_job.job_id)

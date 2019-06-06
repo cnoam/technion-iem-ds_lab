@@ -1,16 +1,21 @@
 
 import random
-
+import re
 
 class JobStatus():
-    def __init__(self, id):
+    """
+       a job :
+        status: (pending|running|failed|completed)
+        run_time: None | float-seconds
+        stdout: None | string
+        stderr: None | string
+        exit_code: None| int
+       """
+
+    def __init__(self, id, filename):
         """
-        a job :
-         status: (pending|running|failed|completed)
-         run_time: None | float-seconds
-         stdout: None | string
-         stderr: None | string
-         exit_code: None| int
+        :param id:
+        :param filename: <string> file name to check, in the format [optional prefix]nnnnnn_mmmmmm.tar.gz
         """
         self.status = 'pending'
         self.job_id = id
@@ -18,6 +23,9 @@ class JobStatus():
         self.stdout = None
         self.stderr = None
         self.exit_code = None
+        matches = re.findall(r"(\d+)_(\d+).", filename)
+        self.filename = "_".join(matches[0]) # this is roughly the file name provided to checker.sh (the unit under test)
+        assert (len(self.filename) > 0)
 
     def job_completed(self, exit_code, run_time,stdout, stderr):
         self.status = 'completed' if exit_code == 0 else 'failed'
@@ -53,12 +61,12 @@ class JobStatusDB():
     def __init__(self):
         self.jobs = {}
 
-    def add_job(self):
+    def add_job(self, package_file_name):
         """Create a new job object, give it ID, put it in the db
         :return the new JobStatus object
         """
         jobid = random.randint(1,1000)
-        j = JobStatus(jobid)
+        j = JobStatus(jobid, package_file_name)
         self.jobs[jobid] = j
         return j
 
