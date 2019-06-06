@@ -15,14 +15,16 @@ class AsyncChecker(threading.Thread):
     def run(self):
         self.job_status.status='running' # todo use enums!
         completed_proc = None
-        start_time = time.time()
+        # WARNING: on Windows pltaform, the clock() measurement is "wallclock"
+        # so sleep(2) will give 2 seconds instead of 0.0
+        start_time = time.clock()
         try:
             print("ref files:  " + self.reference_input + "," + self.reference_output)
             #  https://medium.com/@mccode/understanding-how-uid-and-gid-work-in-docker-containers-c37a01d01cf
             completed_proc = subprocess.run(['./checker.sh', self.package_under_test, self.reference_input, self.reference_output],
                                             check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                             timeout= self.timeout_sec)
-            end_time = time.time()
+            end_time = time.clock()
             self.job_status.job_completed(completed_proc.returncode,
                                       end_time - start_time, # run time
                                       stdout = completed_proc.stdout.decode('utf-8'),
