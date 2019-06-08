@@ -35,12 +35,13 @@ class JobStatus():
         self.stderr = stderr
 
     def __str__(self):
-        s = "{id} {stat} ".format(id = self.job_id, stat=self.status)
+        s = "{id} {stat} . \t".format(id = self.job_id, stat=self.status)
         if self.run_time is not None:
-            s += "{:.3f} sec   exitcode {code}".format(self.run_time, code=self.exit_code)
+            s += "runtime={:.3f} sec.    exitcode {code}".format(self.run_time, code=self.exit_code)
         return s
 
     def as_html(self):
+        import server
         if self.status in ( 'pending', 'running'):
             text = 'Job {} is currently {}'.format( self.job_id, self.status)
         elif self.status == 'failed':
@@ -48,7 +49,9 @@ class JobStatus():
                 STDOUT:<br>
                 {}<br><br>
                 STDERR:<br>
-                {}""".format(self.job_id, self.exit_code, self.stdout, self.stderr)
+                {}""".format(self.job_id, self.exit_code,
+                server.wrap_html_source(self.stdout),
+                server.wrap_html_source(self.stderr))
         elif self.status == 'completed':
             text = 'Job {} completed in {:.3f} seconds.'.format(self.job_id, self.run_time)
         else:

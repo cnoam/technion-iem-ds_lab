@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-#This script takes as input a tar.gz file that contains source code and CMake file.
+#This script takes as input a tar.{gz,xz} file that contains source code and CMake file.
 #
 #1. extract the files
 #2. run cmake
@@ -11,10 +11,12 @@
 # return value:
 # 0     full success
 # any other value - failure of some sort
+echo running $0 $1 $2 $3 $4
+
 function Usage()
 {
     echo "Usage:"
-    echo "checker  some_file.tar.gz input_data_file the_needed_output"
+    echo "checker  some_file.tar.gz input_data_file the_needed_output full/path/to/compare/script"
 }
 
 # write to stdout the content of f after trimming some of the white spaces
@@ -37,7 +39,7 @@ function compare_ignore_spaces()
 	return  $R
 }
 
-if [ -z "$3" ]; then
+if [ -z "$4" ]; then
  Usage
  exit 1
 fi
@@ -45,6 +47,8 @@ fi
 INPUT_TAR=`realpath $1`
 INPUT_DATA=`realpath $2`
 GOLDEN=`realpath $3`
+COMPARATOR=`realpath $4`
+
 TESTDIR=`mktemp -d`
 pushd ./tmp
 rm -rf $TESTDIR
@@ -72,7 +76,8 @@ set +e
 # compare_ignore_spaces output $GOLDEN
 
 # for ex3:
-python tester_ex3.py output $GOLDEN
+echo Comparing output , $GOLDEN
+python $COMPARATOR output $GOLDEN
 if [ $? -ne 0 ]; then
     echo "Sorry: output is different from the required output (or some other error)"
     exit 3

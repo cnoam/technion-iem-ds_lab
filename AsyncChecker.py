@@ -14,6 +14,7 @@ class AsyncChecker(threading.Thread):
         self.reference_output = reference_output
 
     def run(self):
+        import os
         self.job_status.status='running' # todo use enums!
         completed_proc = None
         # WARNING: on Windows pltaform, the clock() measurement is "wallclock"
@@ -22,7 +23,8 @@ class AsyncChecker(threading.Thread):
         try:
             print("ref files:  " + self.reference_input + "," + self.reference_output)
             #  https://medium.com/@mccode/understanding-how-uid-and-gid-work-in-docker-containers-c37a01d01cf
-            completed_proc = subprocess.run(['./checker.sh', self.package_under_test, self.reference_input, self.reference_output],
+            comparator = '{}/tester_ex3.py'.format(os.getcwd())
+            completed_proc = subprocess.run(['./checker.sh', self.package_under_test, self.reference_input, self.reference_output, comparator],
                                             check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                             timeout= self.timeout_sec)
             end_time = time.clock()
@@ -43,6 +45,4 @@ class AsyncChecker(threading.Thread):
         except Exception as ex:
             print("This should never happen:" + str(ex))
             self.job_status.job_completed(exit_code=-200,run_time = 0, stdout = None, stderr = None)
-        finally:
-           pass
         print("thread {} exiting".format(self.getName()))

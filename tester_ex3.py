@@ -7,7 +7,7 @@ Check if two text files are considered equal for course 94201, 2019-05 homework 
 >>> check("50_output.txt", "50_output_permuted.txt")
 True
 """
-
+import os
 import re
 import sys
 from frozendict import frozendict
@@ -34,7 +34,7 @@ def parse_cluster(string):
         r"^Cluster (\d+): \(([\d+,]+)\),.*label = (\w*), purity = (\d)")  # TODO: move the prog to outer scope so it is done once
     result = prog.findall(string)
     if len(result) != 1:  # must have exactly one match
-        raise RegexError(string)
+        raise RegexError("Failed to match regex")
 
     result = result[0]
 
@@ -103,15 +103,15 @@ def check(file_name_a, file_name_b):
 
     :param file_name_a: output of one run
     :param file_name_b: output of another run
-    :return: True if the files are equal (the content might be not identical)
+    :return: 0 if the files are equal (the content might be not identical)
     """
     reference = parse_result_file(file_name_a)
     tested_output = parse_result_file(file_name_b)
-    return compare(reference, tested_output)
+    return  0 if compare(reference, tested_output) else 42
 
 
 if __name__ == "__main__":
-    #exit(test())
+    #  exit(test())
+    print("ex3: comparing {} and {}".format(sys.argv[1], sys.argv[2]))
     good = check(sys.argv[1], sys.argv[2])
-    #print("same:" + str(good))
     exit(good)

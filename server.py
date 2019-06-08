@@ -15,7 +15,7 @@ if sys.version_info.major != 3:
 
 
 UPLOAD_FOLDER = './tmp'
-ALLOWED_EXTENSIONS = {'gz', 'zip'}
+ALLOWED_EXTENSIONS = {'gz','xz'}
 
 app = Flask(__name__, template_folder='./templates')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER

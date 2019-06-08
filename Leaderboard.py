@@ -19,6 +19,6 @@ class Leaderboard():
 
         top_5 = completed[0:5]
         for j in top_5:
-            s += "{}\t\t{} Sec <br>".format(j.filename, j.run_time)
+            s += "{}\t\t{:.3f} Sec <br>".format(j.filename, j.run_time)
         s += "<br>"
         return  s
