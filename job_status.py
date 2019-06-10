@@ -24,7 +24,10 @@ class JobStatus():
         self.stderr = None
         self.exit_code = None
         matches = re.findall(r"(\d+)_(\d+).", filename)
-        self.filename = "_".join(matches[0]) # this is roughly the file name provided to checker.sh (the unit under test)
+        if len(matches)==0 :
+            self.filename = filename
+        else:
+            self.filename = "_".join(matches[0]) # this is roughly the file name provided to checker.sh (the unit under test)
         assert (len(self.filename) > 0)
 
     def job_completed(self, exit_code, run_time,stdout, stderr):
