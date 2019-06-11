@@ -3,12 +3,16 @@
 <body>
     <title>Upload your homework for self checking</title>
     <h1>Course 94201: Upload new File for exercise {{hw_number}}</h1>
-    <p>This tool accepts ONLY files of type tar.gz, or tar.xz with a size limit.</p>
+    <p>This tool accepts ONLY files of type tar.gz, or tar.xz with a size limit of 15MB.</p>
     After uploading, the server will run the checker with your file. <br>
     The checker will try to build your code (if needed) and run it with input.<br>
     The output of your code will then be compared to the output we got from the reference (secret) implementation.<br>
     If the outputs are identical, you will get a "well done!" message;<br>
-    otherwise, you will see the output of the checker, to help you debug what went wrong.<br>
+    <br>
+    in exercise 3, the computation is long, so I changed the code to run asynchronous:
+    You upload your code, then see a job ID, and you can check the status of the job from your browser.
+    <br><br>
+
 <br>
     At this time, this tool is for your checking yourself. You can use it as many times you need<br>
 <br>
