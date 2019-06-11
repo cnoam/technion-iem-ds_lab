@@ -6,7 +6,8 @@ from flask import Flask, flash, request, redirect, url_for,render_template
 from werkzeug.utils import secure_filename
 import subprocess
 import logging
-logging.basicConfig(filename='app.log', level=logging.DEBUG, filemode='w', format='%(name)s - %(levelname)s - %(message)s')
+logging.getLogger().addHandler(logging.StreamHandler()) # write to stderr
+logging.basicConfig(filename='/tmp/app.log', level=logging.DEBUG, filemode='w', format='%(name)s - %(levelname)s - %(message)s')
 
 import job_status
 import  show_jobs
@@ -86,9 +87,13 @@ def _upload_file(ex_type, ex_number, compare_to_golden = False):
                 reference_input  = "./data/ref_{}_{}_input{}".format(ex_type, ex_number, postfix)
                 logging.info(" ref files supplied to handler: " + reference_input + "   " + reference_output)
                 logging.info("TAR file: " + saved_file_name)
-                the_reply = handle_file(saved_file_name,reference_input, reference_output)
+                the_reply = handle_file(saved_file_name,reference_input, reference_output,
+                                        lambda :os.unlink(saved_file_name) )
             finally:
-                os.unlink(saved_file_name)
+                pass
+                # the handle_file() is ASYNC, so at this stage we don't know yet when can the file be deleted.
+                # MUST do it in a completionCallback
+                #os.unlink(saved_file_name)
 
             return the_reply
             #return redirect(url_for('upload_file', filename=filename))
@@ -122,15 +127,18 @@ def wrap_html_source(text):
     return "<html><pre><code> " + text +  "</code></pre></html>"
 
 
-def handle_file(package_under_test, reference_input, reference_output):
+def handle_file(package_under_test, reference_input, reference_output, completionCb):
     use_async = True
     if use_async:
-        return handle_file_async(package_under_test, reference_input, reference_output)
+        return handle_file_async(package_under_test, reference_input, reference_output,completionCb)
     else:
-        return handle_file_blocking(package_under_test, reference_input, reference_output)
+        rv = handle_file_blocking(package_under_test, reference_input, reference_output)
+        if completionCb is not None:
+            completionCb()
+        return rv
     
     
-def handle_file_async(package_under_test, reference_input, reference_output):
+def handle_file_async(package_under_test, reference_input, reference_output,completionCb):
     """
     handle the supplied file: unpack, build, run, compare to golden reference.
     The operation is async (non blocking). A thread is created to handle the request
@@ -141,7 +149,7 @@ def handle_file_async(package_under_test, reference_input, reference_output):
     :return: html page showing link to the tracking page
     """
     new_job = _job_status_db.add_job(package_under_test)
-    async_task = AsyncChecker(new_job, package_under_test, reference_input, reference_output)
+    async_task = AsyncChecker(new_job, package_under_test, reference_input, reference_output, completionCb)
     async_task.start()
     return render_template('job_submitted.html', job_id= new_job.job_id)
 

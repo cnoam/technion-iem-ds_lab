@@ -6,12 +6,13 @@ import time
 class AsyncChecker(threading.Thread):
     timeout_sec = 3000
 
-    def __init__(self, new_job, package_under_test, reference_input, reference_output):
+    def __init__(self, new_job, package_under_test, reference_input, reference_output, completion_cb):
         super().__init__(name = "job "+ str(new_job.job_id))
         self.job_status = new_job
         self.package_under_test = package_under_test
         self.reference_input = reference_input
         self.reference_output = reference_output
+        self.completion_cb = completion_cb
 
     def run(self):
         import os
@@ -45,4 +46,7 @@ class AsyncChecker(threading.Thread):
         except Exception as ex:
             print("This should never happen:" + str(ex))
             self.job_status.job_completed(exit_code=-200,run_time = 0, stdout = None, stderr = None)
+        finally:
+            if self.completion_cb is not None:
+                self.completion_cb()
         print("thread {} exiting".format(self.getName()))
