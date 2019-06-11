@@ -5,6 +5,8 @@ import os
 from flask import Flask, flash, request, redirect, url_for,render_template
 from werkzeug.utils import secure_filename
 import subprocess
+import logging
+logging.basicConfig(filename='app.log', level=logging.DEBUG, filemode='w', format='%(name)s - %(levelname)s - %(message)s')
 
 import job_status
 import  show_jobs
@@ -14,7 +16,7 @@ if sys.version_info.major != 3:
     raise Exception("must use python 3")
 
 
-UPLOAD_FOLDER = './tmp'
+UPLOAD_FOLDER = r'/tmp'
 ALLOWED_EXTENSIONS = {'gz','xz'}
 
 app = Flask(__name__, template_folder='./templates')
@@ -24,13 +26,16 @@ app.secret_key = b'3456o00sdf045'
 
 _job_status_db = job_status.JobStatusDB()
 
+
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+
 @app.route('/',methods = ['GET'])
 def index():
     return render_template('index.html')
+
 
 @app.route('/jobs')
 def show_jobs_():
@@ -52,7 +57,7 @@ def _upload_file(ex_type, ex_number, compare_to_golden = False):
         Block here until the checker completes.
     """
     if not ex_type in ('lab','hw'):
-        return (400, "please use {lab|hw} in the URL")
+        return 400, "please use {lab|hw} in the URL"
     if request.method == 'POST':
         # check if the post request has the file part
         if 'file' not in request.files:
@@ -69,13 +74,18 @@ def _upload_file(ex_type, ex_number, compare_to_golden = False):
             if filename != file.filename:
                 return "Please use a valid file name (e.g. ex560.tar.gz)"
             saved_file_name = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(saved_file_name)
+            try:
+                file.save(saved_file_name)
+            except:
+                logging.error("Failed saving file=" + saved_file_name)
+                raise
 
             try:
                 postfix = "GOLD" if compare_to_golden else ""
                 reference_output = "./data/ref_{}_{}_output{}".format(ex_type,ex_number,postfix)
                 reference_input  = "./data/ref_{}_{}_input{}".format(ex_type, ex_number, postfix)
-                print("---" + reference_input + "   " + reference_output)
+                logging.info(" ref files supplied to handler: " + reference_input + "   " + reference_output)
+                logging.info("TAR file: " + saved_file_name)
                 the_reply = handle_file(saved_file_name,reference_input, reference_output)
             finally:
                 os.unlink(saved_file_name)
@@ -167,5 +177,6 @@ def handle_file_blocking(package_under_test, reference_input, reference_output):
 
 
 if __name__ == '__main__':
-   app.run(host="0.0.0.0", port=8000)
+    logging.info("Starting the server")
+    app.run(host="0.0.0.0", port=8000)
 
