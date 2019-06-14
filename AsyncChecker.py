@@ -1,6 +1,20 @@
 import threading
 import subprocess
 import time
+import re
+
+
+def extract_run_time(string):
+    """
+    extract the runtime that we wrote as the last line in the stderr stream supplied in string
+    :param string: the stderr stream. last line looks like: 0.5 user 1.6 system
+    :return: run time in seconds <float>
+    :raises In
+    """
+    matches = re.findall("run time: ([0-9.]+) user ([0-9.]+) system", string)
+    if len(matches) != 1:
+        raise ValueError("run times not found in \n" + string)
+    return sum(map(float, matches[0]))
 
 
 class AsyncChecker(threading.Thread):
@@ -20,7 +34,7 @@ class AsyncChecker(threading.Thread):
         completed_proc = None
         # WARNING: on Windows pltaform, the clock() measurement is "wallclock"
         # so sleep(2) will give 2 seconds instead of 0.0
-        start_time = time.clock()
+        start_time = time.process_time()
         try:
             print("ref files:  " + self.reference_input + "," + self.reference_output)
             #  https://medium.com/@mccode/understanding-how-uid-and-gid-work-in-docker-containers-c37a01d01cf
@@ -28,9 +42,12 @@ class AsyncChecker(threading.Thread):
             completed_proc = subprocess.run(['./checker.sh', self.package_under_test, self.reference_input, self.reference_output, comparator],
                                             check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                             timeout= self.timeout_sec)
-            end_time = time.clock()
+            end_time = time.process_time()
+
+            # try to extract the run time from the last line of stderr
+            prog_run_time = extract_run_time(completed_proc.stderr.decode('utf-8'))
             self.job_status.job_completed(completed_proc.returncode,
-                                      end_time - start_time, # run time
+                                      prog_run_time,
                                       stdout = completed_proc.stdout.decode('utf-8'),
                                       stderr=completed_proc.stderr.decode('utf-8')
                                       )
