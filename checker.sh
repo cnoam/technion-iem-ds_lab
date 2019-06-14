@@ -55,7 +55,7 @@ rm -rf $TESTDIR
 mkdir $TESTDIR
 cd $TESTDIR
 tar xf $INPUT_TAR
-cmake .
+cmake -DCMAKE_BUILD_TYPE=Release .
 make
 echo ----------- compilation OK
 # do not remove the tempdir, to allow for postmortem
@@ -69,7 +69,7 @@ if [ $num_exe -ne 1 ]; then
     exit 2
 fi
 echo --- about to run: $EXE $INPUT_DATA
-$EXE $INPUT_DATA > output
+/usr/bin/time  -f "run time: %U user %S system" $EXE $INPUT_DATA > output
 echo --- finished the tested run.
 set +e
 # The direct compare is good for hw1 and 2 but not for 3
@@ -78,9 +78,14 @@ set +e
 # for ex3:
 echo Comparing output , $GOLDEN
 python $COMPARATOR output $GOLDEN
-if [ $? -ne 0 ]; then
-    echo "Sorry: output is different from the required output (or some other error)"
+retVal=$?
+if [ $retVal -eq 42 ]; then
+    echo "Sorry: output is different from the required output"
     exit 3
+fi
+if [ $retVal -ne 0 ]; then
+    echo "Sorry: some error occured. Please examine the STDERR"
+    exit 4
 fi
 popd
 echo ---------- run OK
