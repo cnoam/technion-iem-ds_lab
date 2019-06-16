@@ -10,7 +10,7 @@ def _extract_run_time(string):
     extract the runtime that we wrote as the last line in the stderr stream supplied in string
     :param string: the stderr stream. last line looks like: 0.5 user 1.6 system
     :return: run time in seconds <float>
-    :raises In
+    :raises ValueError
     """
     matches = re.findall("run time: ([0-9.]+) user ([0-9.]+) system", string)
     if len(matches) != 1:
@@ -45,7 +45,11 @@ class AsyncChecker(threading.Thread):
                                             timeout= self.timeout_sec)
 
             # try to extract the run time from the last line of stderr
-            prog_run_time = _extract_run_time(completed_proc.stderr.decode('utf-8'))
+            try:
+                prog_run_time = _extract_run_time(completed_proc.stderr.decode('utf-8'))
+            except ValueError:
+                prog_run_time = None
+                logger.warning("Execution time not found for this run. Ignoring it")
             self.job_db.job_completed(completed_proc.returncode,
                                       prog_run_time,
                                       stdout = completed_proc.stdout.decode('utf-8'),

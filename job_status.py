@@ -43,7 +43,9 @@ class JobStatus():
     def __str__(self):
         s = "{id} {stat} . \t".format(id = self.job_id, stat=self.status)
         if self.run_time is not None:
-            s += "runtime={:.3f} sec.    exitcode {code}".format(self.run_time, code=self.exit_code)
+            s += "runtime={:.3f} sec.".format(self.run_time)
+        if self.exit_code is not None:
+            s += "{code}".format(code=self.exit_code)
         return s
 
     def as_html(self):
