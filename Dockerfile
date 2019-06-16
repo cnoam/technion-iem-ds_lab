@@ -1,16 +1,5 @@
-FROM  python:3.6-stretch
+FROM  python_cmake_base
 MAINTAINER Noam Cohen "cnoam@technion.ac.il"
-RUN apt update -y && \
- apt install -y build-essential && \
- apt install -y cmake g++
-
-# upgrade cmake 
-WORKDIR /tmp
-ADD https://github.com/Kitware/CMake/releases/download/v3.14.2/cmake-3.14.2-Linux-x86_64.sh  /tmp
-RUN  chmod +x cmake-3.14.2-Linux-x86_64.sh && ./cmake-3.14.2-Linux-x86_64.sh --skip-license
-ENV PATH="/tmp/bin:${PATH}"
-#
-RUN echo "export PATH=$PATH"
 
 copy . /app
 WORKDIR /app
