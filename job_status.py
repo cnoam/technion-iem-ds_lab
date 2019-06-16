@@ -1,6 +1,7 @@
 
 import random
 import re
+import pickle
 
 class JobStatus():
     """
@@ -30,7 +31,7 @@ class JobStatus():
             self.filename = "_".join(matches[0]) # this is roughly the file name provided to checker.sh (the unit under test)
         assert (len(self.filename) > 0)
 
-    def job_completed(self, exit_code, run_time,stdout, stderr):
+    def _job_completed(self, exit_code, run_time,stdout, stderr):
         self.status = 'completed' if exit_code == 0 else 'failed'
         self.run_time = run_time
         self.exit_code = exit_code
@@ -64,8 +65,16 @@ class JobStatus():
 
 class JobStatusDB():
     """wrapper around simple dict, so I can replace with DB implementation if I wish"""
+    pickle_file_name = 'job_status.pickle'
+
     def __init__(self):
         self.jobs = {}
+        # load current values from pickle
+        try:
+            with  open(self.pickle_file_name, "rb") as f:
+                self.jobs = pickle.load(f)
+        except FileNotFoundError as ex:
+            pass
 
     def add_job(self, package_file_name):
         """Create a new job object, give it ID, put it in the db
@@ -85,3 +94,19 @@ class JobStatusDB():
             if jobstat.status == 'running':
                 count += 1
         return count
+
+    def job_completed(self, job,  exit_code, run_time,stdout, stderr):
+        # forward to the job, and then update the "disk database"
+        job._job_completed(exit_code, run_time,stdout, stderr)
+        with open(self.pickle_file_name, "wb") as f:
+            pickle.dump(self.jobs, f)
+
+
+if __name__ == "__main__":
+    db = JobStatusDB()
+    print("jobs: " + str(db))
+    if True or len(db.jobs) == 0 :
+        job1 = db.add_job("one")
+        job2 = db.add_job("two")
+        db.job_completed(job1,0,0.9,"nothing","  no errors")
+        db.job_completed(job2, 2, 1.4, "nothing", "errors")

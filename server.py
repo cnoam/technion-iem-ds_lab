@@ -9,11 +9,18 @@ import subprocess
 import logging
 _log_path="/logs/"
 
+
 def in_docker():
     with open('/proc/1/cgroup', 'rt') as ifh:
         return 'docker' in ifh.read()
-if not in_docker():
-    _log_path = "/home/noam/data/logs/"
+
+
+try:
+    if not in_docker():
+        _log_path = "/home/noam/data/logs/"
+except FileNotFoundError:
+    # On windows there is no such file
+    _log_path = "./"
 
 # prepare a logger to my liking
 logger = logging.getLogger('server')
@@ -175,7 +182,7 @@ def handle_file_async(package_under_test, reference_input, reference_output,comp
     :return: html page showing link to the tracking page
     """
     new_job = _job_status_db.add_job(package_under_test)
-    async_task = AsyncChecker(new_job, package_under_test, reference_input, reference_output, completionCb)
+    async_task = AsyncChecker(_job_status_db, new_job, package_under_test, reference_input, reference_output, completionCb)
     async_task.start()
     return render_template('job_submitted.html', job_id= new_job.job_id)
 
