@@ -2,6 +2,8 @@
 import random
 import re
 import pickle
+from threading import Lock
+
 
 class JobStatus():
     """
@@ -69,6 +71,7 @@ class JobStatusDB():
 
     def __init__(self):
         self.jobs = {}
+        self.lock = Lock()
         # load current values from pickle
         try:
             with  open(self.pickle_file_name, "rb") as f:
@@ -97,9 +100,16 @@ class JobStatusDB():
 
     def job_completed(self, job,  exit_code, run_time,stdout, stderr):
         # forward to the job, and then update the "disk database"
-        job._job_completed(exit_code, run_time,stdout, stderr)
-        with open(self.pickle_file_name, "wb") as f:
-            pickle.dump(self.jobs, f)
+        with self.lock:  # verify multi thread access will not corrupt the pickle
+            job._job_completed(exit_code, run_time,stdout, stderr)
+            with open(self.pickle_file_name, "wb") as f:
+                  pickle.dump(self.jobs, f)
+
+    def __str__(self):
+        s = "LOCKED " if self.lock.locked() else ""
+        for j in self.jobs.values():
+            s += ", " + str(j)
+        return s
 
 
 if __name__ == "__main__":

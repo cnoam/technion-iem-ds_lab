@@ -1,8 +1,9 @@
 import threading
 import subprocess
 import re
-from server import logger
 
+from logger_init import init_logger
+logger = init_logger('asyncChecker')
 
 def _extract_run_time(string):
     """
@@ -44,7 +45,7 @@ class AsyncChecker(threading.Thread):
                                             timeout= self.timeout_sec)
 
             # try to extract the run time from the last line of stderr
-            prog_run_time = extract_run_time(completed_proc.stderr.decode('utf-8'))
+            prog_run_time = _extract_run_time(completed_proc.stderr.decode('utf-8'))
             self.job_db.job_completed(completed_proc.returncode,
                                       prog_run_time,
                                       stdout = completed_proc.stdout.decode('utf-8'),

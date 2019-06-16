@@ -6,38 +6,7 @@ import os
 from flask import Flask, flash, request, redirect, url_for,render_template
 from werkzeug.utils import secure_filename
 import subprocess
-import logging
-_log_path="/logs/"
-
-
-def in_docker():
-    with open('/proc/1/cgroup', 'rt') as ifh:
-        return 'docker' in ifh.read()
-
-
-try:
-    if not in_docker():
-        _log_path = "/home/noam/data/logs/"
-except FileNotFoundError:
-    # On windows there is no such file
-    _log_path = "./"
-
-# prepare a logger to my liking
-logger = logging.getLogger('server')
-stream_handler = logging.StreamHandler()
-file_handler = logging.FileHandler(filename=_log_path +'homework_checker.log')
-logger.setLevel(logging.DEBUG) # for the whole logger
-#stream_handler.setLevel(logging.DEBUG) # for each handler (if different from the logger)
-#file_handler.setLevel(logging.DEBUG)
-log_formatter = logging.Formatter('%(asctime)-15s %(name)s - %(levelname)s - %(message)s')
-file_handler.setFormatter(log_formatter)
-stream_handler.setFormatter(log_formatter)
-logger.addHandler(stream_handler)
-logger.addHandler(file_handler)
-
-tmp = open(_log_path+"test","w") # should raise if there is an error
-tmp.close()
-os.unlink(_log_path+"test")
+from logger_init import init_logger
 
 import job_status
 import  show_jobs
@@ -46,7 +15,7 @@ from AsyncChecker import AsyncChecker
 if sys.version_info.major != 3:
     raise Exception("must use python 3")
 
-
+logger = init_logger('server')
 logger.debug("TODO: connect logger channel to Azure log viewer!")
 
 UPLOAD_FOLDER = r'/tmp'
