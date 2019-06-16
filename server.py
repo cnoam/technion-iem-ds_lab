@@ -1,13 +1,36 @@
 # written and tested on linux only
 # It will not work on Windows
+
 import sys
 import os
 from flask import Flask, flash, request, redirect, url_for,render_template
 from werkzeug.utils import secure_filename
 import subprocess
 import logging
-logging.getLogger().addHandler(logging.StreamHandler()) # write to stderr
-logging.basicConfig(filename='/tmp/app.log', level=logging.DEBUG, filemode='w', format='%(name)s - %(levelname)s - %(message)s')
+_log_path="/logs/"
+
+def in_docker():
+    with open('/proc/1/cgroup', 'rt') as ifh:
+        return 'docker' in ifh.read()
+if not in_docker():
+    _log_path = "/home/noam/data/logs/"
+
+# prepare a logger to my liking
+logger = logging.getLogger('server')
+stream_handler = logging.StreamHandler()
+file_handler = logging.FileHandler(filename=_log_path +'homework_checker.log')
+logger.setLevel(logging.DEBUG) # for the whole logger
+#stream_handler.setLevel(logging.DEBUG) # for each handler (if different from the logger)
+#file_handler.setLevel(logging.DEBUG)
+log_formatter = logging.Formatter('%(asctime)-15s %(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(log_formatter)
+stream_handler.setFormatter(log_formatter)
+logger.addHandler(stream_handler)
+logger.addHandler(file_handler)
+
+tmp = open(_log_path+"test","w") # should raise if there is an error
+tmp.close()
+os.unlink(_log_path+"test")
 
 import job_status
 import  show_jobs
@@ -16,6 +39,8 @@ from AsyncChecker import AsyncChecker
 if sys.version_info.major != 3:
     raise Exception("must use python 3")
 
+
+logger.debug("TODO: connect logger channel to Azure log viewer!")
 
 UPLOAD_FOLDER = r'/tmp'
 ALLOWED_EXTENSIONS = {'gz','xz'}
@@ -78,15 +103,15 @@ def _upload_file(ex_type, ex_number, compare_to_golden = False):
             try:
                 file.save(saved_file_name)
             except:
-                logging.error("Failed saving file=" + saved_file_name)
+                logger.error("Failed saving file=" + saved_file_name)
                 raise
 
             try:
                 postfix = "GOLD" if compare_to_golden else ""
                 reference_output = "./data/ref_{}_{}_output{}".format(ex_type,ex_number,postfix)
                 reference_input  = "./data/ref_{}_{}_input{}".format(ex_type, ex_number, postfix)
-                logging.info(" ref files supplied to handler: " + reference_input + "   " + reference_output)
-                logging.info("TAR file: " + saved_file_name)
+                logger.info(" ref files supplied to handler: " + reference_input + "   " + reference_output)
+                logger.info("TAR file: " + saved_file_name)
                 the_reply = handle_file(saved_file_name,reference_input, reference_output,
                                         lambda :os.unlink(saved_file_name) )
             finally:
@@ -168,10 +193,10 @@ def handle_file_blocking(package_under_test, reference_input, reference_output):
     timeout = 10
     completed_proc = None
     try:
-        print("ref files:  "+reference_input+","+reference_output)
+        logger.debug("ref files:  "+reference_input+","+reference_output)
         #  https://medium.com/@mccode/understanding-how-uid-and-gid-work-in-docker-containers-c37a01d01cf
-        completed_proc = subprocess.run( ['./checker.sh',package_under_test, reference_input, reference_output], check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE,timeout=timeout)
-#        print(completed_proc.stdout)
+        completed_proc = subprocess.run( ['./checker.sh',package_under_test, reference_input, reference_output],
+                                         check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE,timeout=timeout)
         if completed_proc.returncode == 0:
             message = "well Done!"
         else:
@@ -186,6 +211,6 @@ def handle_file_blocking(package_under_test, reference_input, reference_output):
 
 
 if __name__ == '__main__':
-    logging.info("Starting the server")
+    logger.warning("Starting the server as standalone")
     app.run(host="0.0.0.0", port=8000)
 

@@ -41,7 +41,7 @@ function compare_ignore_spaces()
 
 if [ -z "$4" ]; then
  Usage
- exit 1
+ exit 40
 fi
 
 INPUT_TAR=`realpath $1`
@@ -68,7 +68,7 @@ num_exe=`echo $EXE | wc -w`
 if [ $num_exe -ne 1 ]; then
     echo ERROR: There should be exactly one executable file in this dir
     echo You have these files:    $EXE
-    exit 2
+    exit 41
 fi
 echo --- about to run: $EXE $INPUT_DATA
 /usr/bin/time  -f "run time: %U user %S system" $EXE $INPUT_DATA > output
@@ -83,11 +83,11 @@ python $COMPARATOR output $GOLDEN
 retVal=$?
 if [ $retVal -eq 42 ]; then
     echo "Sorry: output is different from the required output"
-    exit 3
+    exit 42
 fi
 if [ $retVal -ne 0 ]; then
     echo "Sorry: some error occured. Please examine the STDERR"
-    exit 4
+    exit 43
 fi
 popd
 echo ---------- run OK

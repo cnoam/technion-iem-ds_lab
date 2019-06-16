@@ -2,6 +2,7 @@ import threading
 import subprocess
 import time
 import re
+from server import logger
 
 
 def extract_run_time(string):
@@ -36,13 +37,13 @@ class AsyncChecker(threading.Thread):
         # so sleep(2) will give 2 seconds instead of 0.0
         start_time = time.process_time()
         try:
-            print("ref files:  " + self.reference_input + "," + self.reference_output)
+            logger.info("ref files:  " + self.reference_input + "," + self.reference_output)
             #  https://medium.com/@mccode/understanding-how-uid-and-gid-work-in-docker-containers-c37a01d01cf
             comparator = '{}/tester_ex3.py'.format(os.getcwd())
-            completed_proc = subprocess.run(['./checker.sh', self.package_under_test, self.reference_input, self.reference_output, comparator],
+            completed_proc = subprocess.run(['./checker.sh', self.package_under_test, self.reference_input,
+                                             self.reference_output, comparator],
                                             check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                             timeout= self.timeout_sec)
-            end_time = time.process_time()
 
             # try to extract the run time from the last line of stderr
             prog_run_time = extract_run_time(completed_proc.stderr.decode('utf-8'))
@@ -61,9 +62,9 @@ class AsyncChecker(threading.Thread):
                                       stderr=completed_proc.stderr.decode('utf-8')
                                       )
         except Exception as ex:
-            print("This should never happen:" + str(ex))
+            logger.error("This should never happen:" + str(ex))
             self.job_status.job_completed(exit_code=-200,run_time = 0, stdout = None, stderr = None)
         finally:
             if self.completion_cb is not None:
                 self.completion_cb()
-        print("thread {} exiting".format(self.getName()))
+        logger.info("thread {} exiting".format(self.getName()))
