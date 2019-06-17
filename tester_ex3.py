@@ -85,6 +85,11 @@ def compare(reference, tested):
             # the clusters is list<dict> . We need to somehow get canoical ordering of the list to enable comparison
             for cluster in clusters:
                 cluster["tuple"] = tuple(sorted(cluster["tuple"]))
+
+                # the cluster ID "should have been" part of the solution, but I see that for some students
+                # the cluster content is correct, but the ID is different.
+                # so set the ID to the lowest (first) value in the tuple
+                cluster['id'] = cluster['tuple'][0]
                 cluster = frozendict(cluster)
                 clusters_set.add(cluster)
         return canon
