@@ -24,17 +24,17 @@ class ParseError(BaseException):
 def parse_cluster(string):
     """
     parse a string of the format
-    Cluster 6: (6,11,44,40,43,17,18,32,24,36,21), dominant label = KIRC, purity = 1
+    Cluster 6: (6,11,44,40,43,17,18,32,24,36,21), dominant label = KIRC, purity = 0.876
     and put it in a data structure
     NOTE: the tuple is ordered collection and we preserve the original order.
     :param string: one line with the above syntax
-    :return: {"id": 6, "tuple": tuple<int> , "dominant": "KIRK", "purity": 1 }
+    :return: {"id": "6", "tuple": tuple<int> , "dominant": "KIRK", "purity": "0.876" }
     """
-    prog = re.compile(
-        r"^Cluster (\d+): \(([\d+,]+)\),.*label = (\w*), purity = (\d)")  # TODO: move the prog to outer scope so it is done once
+    prog = re.compile(  # TODO: move the prog to outer scope so it is done once
+         r"^Cluster (\d+):\s*\(([\d+,\s*]+)\)\s*,.*=\s*(\w*),.* ([\d.]+)")
     result = prog.findall(string)
     if len(result) != 1:  # must have exactly one match
-        raise RegexError("Failed to match regex")
+        raise RegexError("Failed to match regex. line=" + string)
 
     result = result[0]
 
