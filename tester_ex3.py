@@ -58,7 +58,7 @@ def parse_result_file(filename):
                 x.append(parse_cluster(line))
             root[linkage] = x
             line = fin.readline()
-            if not len(line):
+            if not len(line) and not (link == 2):
                 raise ParseError("line should be empty:" + line)
     return root
 
