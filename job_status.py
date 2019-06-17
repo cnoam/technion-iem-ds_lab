@@ -68,8 +68,13 @@ class JobStatus():
 
 
 class JobStatusDB():
-    """wrapper around simple dict, so I can replace with DB implementation if I wish"""
-    pickle_file_name = 'job_status.pickle'
+    """wrapper around simple dict,
+     so I can replace with DB implementation if I wish"""
+
+    # keep the pickle file in a place that will persist!
+    # in Docker, every container restart, the local filesystem is cleaned
+    # so '/logs' is mounted on the host's file system
+    pickle_file_name = '/logs/job_status.pickle'
 
     def __init__(self):
         self.jobs = {}
