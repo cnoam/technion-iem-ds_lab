@@ -19,7 +19,7 @@ def _extract_run_time(string):
 
 
 class AsyncChecker(threading.Thread):
-    timeout_sec = 3000
+    timeout_sec = 3000 # TODO: check code behavior when timeout
 
     def __init__(self, job_db,  new_job, package_under_test, reference_input, reference_output, completion_cb):
         super().__init__(name = "job "+ str(new_job.job_id))
@@ -50,8 +50,9 @@ class AsyncChecker(threading.Thread):
             except ValueError:
                 prog_run_time = None
                 logger.warning("Execution time not found for this run. Ignoring it")
-            self.job_db.job_completed(completed_proc.returncode,
-                                      prog_run_time,
+            self.job_db.job_completed(self.job_status,
+                                      exit_code=completed_proc.returncode,
+                                      run_time=prog_run_time,
                                       stdout = completed_proc.stdout.decode('utf-8'),
                                       stderr=completed_proc.stderr.decode('utf-8')
                                       )
@@ -59,13 +60,18 @@ class AsyncChecker(threading.Thread):
         # except subprocess.TimeoutExpired:
         #    message = "Your code ran for too long. timeout set to "+ str(timeout) + " seconds"
         except subprocess.CalledProcessError as ex:
-            self.job_status.completed(-100,
+            self.job_db.job_completed(self.job_status,
+                                      exit_code=-100,
+                                      run_time=None,
                                       stdout=completed_proc.stdout.decode('utf-8'),
                                       stderr=completed_proc.stderr.decode('utf-8')
                                       )
-        except Exception as ex:
-            logger.error("This should never happen:" + str(ex))
-            self.job_status.job_completed(exit_code=-200,run_time = 0, stdout = None, stderr = None)
+        # uncomment the next lines only for special debug.
+        # if there is a bug, the code here should crash, and the web server will return 500 as it should!
+        #
+        # except Exception as ex:
+        #     logger.error("This should never happen:" + str(ex))
+        #     self.job_status.job_completed(exit_code=-200,run_time = 0, stdout = None, stderr = None)
         finally:
             if self.completion_cb is not None:
                 self.completion_cb()
