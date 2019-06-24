@@ -33,7 +33,9 @@ class AsyncChecker(threading.Thread):
 
     def run(self):
         import os
+        import datetime
         self.job_status.status='running' # todo use enums!
+        self.job_status.start_time = datetime.datetime.today()
         completed_proc = None
 
         try:

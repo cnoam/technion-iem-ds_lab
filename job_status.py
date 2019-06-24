@@ -22,10 +22,11 @@ class JobStatus():
         """
         self.status = 'pending'
         self.job_id = id
-        self.run_time = None
+        self.run_time = None  # will hold the duration
         self.stdout = None
         self.stderr = None
         self.exit_code = None
+        self.start_time = None  # will hold the wallclock time when started
         matches = re.findall(r"(\d+)_(\d+).", filename)
         if len(matches)==0 :
             self.filename = filename
@@ -113,9 +114,22 @@ class JobStatusDB():
                   pickle.dump(self.jobs, f)
 
     def __str__(self):
-        s = "LOCKED " if self.lock.locked() else ""
+        from Leaderboard import html_pre
+        if self.lock.locked():
+            return "Table is currently locked. Try again soon"
+        s = html_pre
+        s = html_pre + "<h1>Job table</h1> <br><br>"
+        s += """<table>
+                <tr>
+                <th>Date</th>
+                <th>Job ID</th>
+                <th>Duration [sec]</th>
+                <th>Status</th>
+                </tr>"""
         for j in self.jobs.values():
-            s += ", " + str(j)
+            when = j.start_time.ctime() if j.start_time is not None else "?"
+            s += "<tr> <td>{}</td> <td>{}</td> <td>{:.3f}</td> <td>{}</td> </tr>".format(when,j.id,j.run_time,j.status)
+        s += "</table>"
         return s
 
 
