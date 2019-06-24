@@ -22,6 +22,7 @@ def show_jobs(job_status_db):
             </tr>"""
     for j in job_status_db.jobs.values():
         when = j.start_time.ctime() if j.start_time is not None else "?"
-        s += "<tr> <td>{}</td> <td>{}</td> <td>{:.3f}</td> <td>{}</td> </tr>".format(when,j.id,j.run_time,j.status)
+        run_time = '{:.5}'.format(j.run_time) if j.run_time is not None else "N/A"
+        s += "<tr> <td>{}</td> <td>{}</td> <td>{}</td> <td>{}</td> </tr>".format(when,j.job_id,run_time,j.status)
     s += "</table>"
     return s
