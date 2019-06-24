@@ -55,6 +55,9 @@ rm -rf $TESTDIR
 mkdir $TESTDIR
 cd $TESTDIR
 tar xf $INPUT_TAR
+
+# make sure the source files are not marked as executable
+chmod a-x ./*
 # make sure users did not upload this cache by mistake - it confuses the cmake
 rm -rf CMakeCache.txt
 cmake -DCMAKE_BUILD_TYPE=Release .
