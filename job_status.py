@@ -110,26 +110,13 @@ class JobStatusDB():
         # forward to the job, and then update the "disk database"
         with self.lock:  # verify multi thread access will not corrupt the pickle
             job._job_completed(exit_code, run_time,stdout, stderr)
-            with open(self.pickle_file_name, "wb") as f:
-                  pickle.dump(self.jobs, f)
+            #with open(self.pickle_file_name, "wb") as f:
+            #    pickle.dump(self.jobs, f)
 
     def __str__(self):
-        from Leaderboard import html_pre
-        if self.lock.locked():
-            return "Table is currently locked. Try again soon"
-        s = html_pre
-        s = html_pre + "<h1>Job table</h1> <br><br>"
-        s += """<table>
-                <tr>
-                <th>Date</th>
-                <th>Job ID</th>
-                <th>Duration [sec]</th>
-                <th>Status</th>
-                </tr>"""
+        s = "LOCKED " if self.lock.locked() else ""
         for j in self.jobs.values():
-            when = j.start_time.ctime() if j.start_time is not None else "?"
-            s += "<tr> <td>{}</td> <td>{}</td> <td>{:.3f}</td> <td>{}</td> </tr>".format(when,j.id,j.run_time,j.status)
-        s += "</table>"
+            s += ", " + str(j)
         return s
 
 
