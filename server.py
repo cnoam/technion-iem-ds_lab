@@ -88,7 +88,7 @@ def _upload_file(ex_type, ex_number, compare_to_golden = False):
                 reference_input  = "./data/ref_{}_{}_input{}".format(ex_type, ex_number, postfix)
                 logger.info(" ref files supplied to handler: " + reference_input + "   " + reference_output)
                 logger.info("TAR file: " + saved_file_name)
-                the_reply = handle_file(saved_file_name,reference_input, reference_output,
+                the_reply = handle_file(saved_file_name,ex_type, ex_number, reference_input, reference_output,
                                         lambda :os.unlink(saved_file_name) )
             finally:
                 pass
@@ -129,18 +129,19 @@ def wrap_html_source(text):
     return "<html><pre><code> " + text +  "</code></pre></html>"
 
 
-def handle_file(package_under_test, reference_input, reference_output, completionCb):
+def handle_file(package_under_test,ex_type, ex_number, reference_input, reference_output, completionCb):
     use_async = True
     if use_async:
-        return handle_file_async(package_under_test, reference_input, reference_output,completionCb)
+        return handle_file_async(package_under_test, ex_type, ex_number, reference_input, reference_output,completionCb)
     else:
+        logger.warning("this path is not maintained!")
         rv = handle_file_blocking(package_under_test, reference_input, reference_output)
         if completionCb is not None:
             completionCb()
         return rv
     
     
-def handle_file_async(package_under_test, reference_input, reference_output,completionCb):
+def handle_file_async(package_under_test, ex_type, ex_number, reference_input, reference_output,completionCb):
     """
     handle the supplied file: unpack, build, run, compare to golden reference.
     The operation is async (non blocking). A thread is created to handle the request
@@ -151,6 +152,18 @@ def handle_file_async(package_under_test, reference_input, reference_output,comp
     :return: html page showing link to the tracking page
     """
     new_job = _job_status_db.add_job(package_under_test)
+
+    # decide here (until I move to a better place) what is the proper (executor,handler) for a given (ex_type,ex_number)
+    if ex_number >= 4:
+        new_job.comparator_file_name = "tester_ex{}.py".format(ex_number)
+        new_job.executor_file_name = "check_python.sh"
+    elif ex_number == 3:
+        new_job.comparator_file_name = "tester_ex{}.py".format(ex_number)
+        new_job.executor_file_name = "checker.sh"
+    else:
+        new_job.comparator_file_name = None
+        new_job.executor_file_name = "checker.sh"
+
     async_task = AsyncChecker(_job_status_db, new_job, package_under_test, reference_input, reference_output, completionCb)
     async_task.start()
     return render_template('job_submitted.html', job_id= new_job.job_id)

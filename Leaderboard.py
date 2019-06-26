@@ -53,4 +53,11 @@ class Leaderboard():
             when = j.start_time.ctime() if j.start_time is not None else "?"
             s += "<tr> <td>{}</td> <td>{}</td> <td>{:.3f}</td> </tr>".format(when ,j.filename, j.run_time)
         s += "</table>"
+
+        s += "<br><br><h3> these are marked as wrong answer, but might still be good<h3>"
+        completed = list(filter(lambda  job: job.exit_code == 42, jobs))
+        for j in completed:
+            when = j.start_time.ctime() if j.start_time is not None else "?"
+            s += "<tr> <td>{}</td> <td>{}</td> <td>{:.3f}</td> </tr>".format(when ,j.filename, j.run_time)
+        s += "</table>"
         return s

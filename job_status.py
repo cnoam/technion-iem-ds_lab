@@ -27,12 +27,20 @@ class JobStatus():
         self.stderr = None
         self.exit_code = None
         self.start_time = None  # will hold the wallclock time when started
+        self.comparator_file_name = None
+        self.executor_file_name = None
+
         matches = re.findall(r"(\d+)_(\d+).", filename)
         if len(matches)==0 :
             self.filename = filename
         else:
             self.filename = "_".join(matches[0]) # this is roughly the file name provided to checker.sh (the unit under test)
         assert (len(self.filename) > 0)
+
+    def set_handlers(self,comparator_file_name, executor_file_name):
+        self.comparator_file_name = comparator_file_name
+        self.executor_file_name = executor_file_name
+
 
     def _job_completed(self, exit_code, run_time,stdout, stderr):
         self.status = 'completed' if exit_code == 0 else 'failed'

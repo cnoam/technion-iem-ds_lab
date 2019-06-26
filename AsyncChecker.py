@@ -41,21 +41,25 @@ class AsyncChecker(threading.Thread):
         try:
             logger.info("ref files:  " + self.reference_input + "," + self.reference_output)
             #  https://medium.com/@mccode/understanding-how-uid-and-gid-work-in-docker-containers-c37a01d01cf
-            comparator = '{}/tester_ex3.py'.format(os.getcwd())
+            comparator = self.job_status.comparator_file_name
+            assert (comparator is not None)
+            executor = self.job_status.executor_file_name
+            assert (executor is not None)
             prog_run_time = None
-            completed_proc = subprocess.run(['./checker.sh', self.package_under_test, self.reference_input, self.reference_output, comparator],
+            logger.debug("executor={}, UUT={}, comparator={}".format( executor,self.package_under_test, comparator))
+            completed_proc = subprocess.run([executor, self.package_under_test, self.reference_input, self.reference_output, comparator],
                                             check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                             timeout= self.timeout_sec)
 
             logger.info("job {} completed with exit code {}".format(self.job_status.job_id, completed_proc.returncode))
             if completed_proc.returncode != 0:
                 logger.info("STDERR:\n" + completed_proc.stderr.decode('utf-8'))
-            else:
-                # try to extract the run time from the last line of stderr
-                try:
-                    prog_run_time = _extract_run_time(completed_proc.stderr.decode('utf-8'))
-                except ValueError:
-                    logger.warning("Execution time not found for this run. Ignoring it")
+
+            # try to extract the run time from the last line of stderr
+            try:
+                prog_run_time = _extract_run_time(completed_proc.stderr.decode('utf-8'))
+            except ValueError:
+                logger.warning("Execution time not found for this run. Ignoring it")
             self.job_db.job_completed(self.job_status,
                                       exit_code=completed_proc.returncode,
                                       run_time=prog_run_time,
