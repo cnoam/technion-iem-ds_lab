@@ -118,8 +118,8 @@ class JobStatusDB():
         # forward to the job, and then update the "disk database"
         with self.lock:  # verify multi thread access will not corrupt the pickle
             job._job_completed(exit_code, run_time,stdout, stderr)
-            #with open(self.pickle_file_name, "wb") as f:
-            #    pickle.dump(self.jobs, f)
+            with open(self.pickle_file_name, "wb") as f:
+                pickle.dump(self.jobs, f)
 
     def __str__(self):
         s = "LOCKED " if self.lock.locked() else ""
