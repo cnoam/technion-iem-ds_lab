@@ -39,7 +39,7 @@ class Leaderboard():
         s += """<table>
         <tr>
         <th>Date</th>
-        <th>Job ID</th>
+        <th>Job name</th>
         <th>Duration [sec]</th>
         </tr>"""
 
@@ -57,7 +57,7 @@ class Leaderboard():
         s += """<table>
         <tr>
         <th>Date</th>
-        <th>Job ID</th>
+        <th>Job name</th>
         <th>Duration [sec]</th>
         </tr>"""
         s += "<br><br><h3> these are marked as wrong answer, but might still be good<h3>"
