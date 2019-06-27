@@ -71,6 +71,6 @@ def check(file_name_a, file_name_b):
 
 
 if __name__ == "__main__":
-    exit(test())
+    #    exit(test())
 
-    exit( check(sys.argv[1], sys.argv[2]) )
+    exit( 0 if check(sys.argv[1], sys.argv[2]) else 42 )

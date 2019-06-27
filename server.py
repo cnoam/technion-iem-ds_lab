@@ -167,14 +167,14 @@ def handle_file_async(package_under_test, ex_type, ex_number, reference_input, r
 
     # decide here (until I move to a better place) what is the proper (executor,handler) for a given (ex_type,ex_number)
     if ex_number >= 4:
-        new_job.comparator_file_name = "tester_ex{}.py".format(ex_number)
-        new_job.executor_file_name = "check_python.sh"
+        new_job.comparator_file_name = "./tester_ex{}.py".format(ex_number)
+        new_job.executor_file_name = "./check_python.sh"
     elif ex_number == 3:
-        new_job.comparator_file_name = "tester_ex{}.py".format(ex_number)
-        new_job.executor_file_name = "checker.sh"
+        new_job.comparator_file_name = "./tester_ex{}.py".format(ex_number)
+        new_job.executor_file_name = "./checker.sh"
     else:
         new_job.comparator_file_name = None
-        new_job.executor_file_name = "checker.sh"
+        new_job.executor_file_name = "./checker.sh"
 
     async_task = AsyncChecker(_job_status_db, new_job, package_under_test, reference_input, reference_output, completionCb)
     async_task.start()
