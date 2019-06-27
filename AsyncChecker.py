@@ -19,7 +19,7 @@ def _extract_run_time(string):
 
 
 class AsyncChecker(threading.Thread):
-    timeout_sec = 3000 # TODO: check code behavior when timeout
+    timeout_sec = 300 # TODO: check code behavior when timeout
 
     def __init__(self, job_db,  new_job, package_under_test, reference_input, reference_output, completion_cb):
         super().__init__(name = "job "+ str(new_job.job_id))

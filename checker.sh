@@ -60,7 +60,8 @@ tar xf $INPUT_TAR
 chmod a-x ./*
 # make sure users did not upload this cache by mistake - it confuses the cmake
 rm -rf CMakeCache.txt
-cmake -DCMAKE_BUILD_TYPE=Release .
+cmake .
+# -DCMAKE_BUILD_TYPE=Release .
 make
 echo ----------- compilation OK
 # do not remove the tempdir, to allow for postmortem

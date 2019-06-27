@@ -54,6 +54,12 @@ class Leaderboard():
             s += "<tr> <td>{}</td> <td>{}</td> <td>{:.3f}</td> </tr>".format(when ,j.filename, j.run_time)
         s += "</table>"
 
+        s += """<table>
+        <tr>
+        <th>Date</th>
+        <th>Job ID</th>
+        <th>Duration [sec]</th>
+        </tr>"""
         s += "<br><br><h3> these are marked as wrong answer, but might still be good<h3>"
         completed = list(filter(lambda  job: job.exit_code == 42, jobs))
         for j in completed:
