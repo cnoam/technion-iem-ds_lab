@@ -3,6 +3,7 @@
 
 import sys
 import os
+from http import HTTPStatus
 from flask import Flask, flash, request, redirect, url_for,render_template
 from werkzeug.utils import secure_filename
 import subprocess
@@ -16,10 +17,13 @@ if sys.version_info.major != 3:
     raise Exception("must use python 3")
 
 logger = init_logger('server')
-logger.debug("TODO: connect logger channel to Azure log viewer!")
 
 UPLOAD_FOLDER = r'/tmp'
 ALLOWED_EXTENSIONS = {'gz','xz'}
+
+MAX_CONCURRENT_JOBS = os.cpu_count()
+if MAX_CONCURRENT_JOBS is None:
+    MAX_CONCURRENT_JOBS = 2  # rumored bug in getting the cpu count
 
 app = Flask(__name__, template_folder='./templates')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -39,6 +43,12 @@ def index():
     return render_template('index.html')
 
 
+@app.route('/status', methods=['GET'])
+def get_server_status():
+    import json
+    return json.dumps({'num_jobs': _job_status_db.num_running_jobs()})
+
+
 @app.route('/jobs')
 def show_jobs_():
     """
@@ -50,6 +60,8 @@ def show_jobs_():
 # noinspection PyPackageRequirements
 @app.route('/submit/<ex_type>/<int:number>', methods=['GET', 'POST'])
 def upload_file(ex_type, number):
+    if _job_status_db.num_running_jobs() >= MAX_CONCURRENT_JOBS:
+        return "Busy! try again in a few seconds.", HTTPStatus.SERVICE_UNAVAILABLE
     return _upload_file(ex_type, number)
 
 
@@ -59,7 +71,7 @@ def _upload_file(ex_type, ex_number, compare_to_golden = False):
         Block here until the checker completes.
     """
     if not ex_type in ('lab','hw'):
-        return 400, "please use {lab|hw} in the URL"
+        return "please use {lab|hw} in the URL", HTTPStatus.BAD_REQUEST
     if request.method == 'POST':
         # check if the post request has the file part
         if 'file' not in request.files:
@@ -74,7 +86,7 @@ def _upload_file(ex_type, ex_number, compare_to_golden = False):
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             if filename != file.filename:
-                return "Please use a valid file name (e.g. ex560.tar.gz)"
+                return "Please use a valid file name (without spaces) (e.g. ex560.tar.gz)",HTTPStatus.BAD_REQUEST
             saved_file_name = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             try:
                 file.save(saved_file_name)
@@ -111,7 +123,7 @@ def get_job_stat(job_id):
     try:
         return _job_status_db.get_job_stat(job_id)
     except KeyError:
-        return "job id not found", 404
+        return "job id not found", HTTPStatus.NOT_FOUND
     
 
 @app.route('/leaderboard')
