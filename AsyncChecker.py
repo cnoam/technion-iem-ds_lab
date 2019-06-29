@@ -19,9 +19,8 @@ def _extract_run_time(string):
 
 
 class AsyncChecker(threading.Thread):
-    timeout_sec = 300 # TODO: check code behavior when timeout
 
-    def __init__(self, job_db,  new_job, package_under_test, reference_input, reference_output, completion_cb):
+    def __init__(self, job_db,  new_job, package_under_test, reference_input, reference_output, completion_cb, timeout_sec = 300):
         super().__init__(name = "job "+ str(new_job.job_id))
         self.job_status = new_job
         self.package_under_test = package_under_test
@@ -29,16 +28,18 @@ class AsyncChecker(threading.Thread):
         self.reference_output = reference_output
         self.completion_cb = completion_cb
         self.job_db = job_db
-
+        self.timeout_sec = timeout_sec
 
     def run(self):
-        import os
         import datetime
         self.job_status.status='running' # todo use enums!
         self.job_status.start_time = datetime.datetime.today()
         completed_proc = None
 
+        exit_code = None
+        run_time = None
         try:
+            import  os
             logger.info("ref files:  " + self.reference_input + "," + self.reference_output)
             #  https://medium.com/@mccode/understanding-how-uid-and-gid-work-in-docker-containers-c37a01d01cf
             comparator = self.job_status.comparator_file_name
@@ -47,48 +48,56 @@ class AsyncChecker(threading.Thread):
             assert (executor is not None)
             prog_run_time = None
             logger.debug("executor={}, UUT={}, comparator={}".format( executor,self.package_under_test, comparator))
-            completed_proc = subprocess.run([executor, self.package_under_test, self.reference_input, self.reference_output, comparator],
+
+            # run the subprocess ( a shell that runs the tested process) under a timeout constraint.
+            # there is a known problem (https://bugs.python.org/issue26534) using timeout in such scenario,
+            # so in addition to the python's timeout, I pass the value in an Environment var to the shell
+            # and use timeout command there.
+            # the timeout value in the shell is shorter than the python's so it will expire first and indicate a problem
+            # in the tested executable and not the tester script.
+            os.environ.putenv('UUT_TIMEOUT', str(self.timeout_sec - 1))
+            completed_proc = subprocess.run([executor, self.package_under_test, self.reference_input,
+                                             self.reference_output, comparator],
                                             check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                             timeout= self.timeout_sec)
-
             logger.info("job {} completed with exit code {}".format(self.job_status.job_id, completed_proc.returncode))
             if completed_proc.returncode != 0:
                 logger.info("STDERR:\n" + completed_proc.stderr.decode('utf-8'))
 
             # try to extract the run time from the last line of stderr
-            try:
-                prog_run_time = _extract_run_time(completed_proc.stderr.decode('utf-8'))
+            try: prog_run_time = _extract_run_time(completed_proc.stderr.decode('utf-8'))
             except ValueError:
                 logger.warning("Execution time not found for this run. Ignoring it")
+            exit_code=completed_proc.returncode
+            run_time=prog_run_time
+
+        except subprocess.TimeoutExpired:
+            logger.warning("job timed out. timeout set to "+ str(self.timeout_sec) + " seconds")
+            exit_code = completed_proc.returncode
+            run_time = None
+        except subprocess.CalledProcessError:
+            exit_code=-100
+            run_time=None
+        finally:
             self.job_db.job_completed(self.job_status,
-                                      exit_code=completed_proc.returncode,
-                                      run_time=prog_run_time,
+                                      exit_code= exit_code,
+                                      run_time=run_time,
                                       stdout=completed_proc.stdout.decode('utf-8'),
                                       stderr=completed_proc.stderr.decode('utf-8')
                                       )
 
-        # except subprocess.TimeoutExpired:
-        #    message = "Your code ran for too long. timeout set to "+ str(timeout) + " seconds"
-        except subprocess.CalledProcessError as ex:
-            self.job_db.job_completed(self.job_status,
-                                      exit_code=-100,
-                                      run_time=None,
-                                      stdout=completed_proc.stdout.decode('utf-8'),
-                                      stderr=completed_proc.stderr.decode('utf-8')
-                                      )
-        # uncomment the next lines only for special debug.
-        # if there is a bug, the code here should crash, and the web server will return 500 as it should!
-        #
-        except Exception as ex:
-             logger.error("This should never happen:" + str(ex))
-             self.job_db.job_completed(self.job_status,
-                                      exit_code=-500,
-                                      run_time=None,
-                                      stdout=None,
-                                      stderr=None
-                                      )
-             raise
-        finally:
             if self.completion_cb is not None:
                 self.completion_cb()
         logger.info("thread {} exiting".format(self.getName()))
+
+
+if __name__ == "__main__":
+
+    # check that the timeout is applied to the process spawned by the shell which is spawned by the python process.
+    from job_status import JobStatus, JobStatusDB
+    db = JobStatusDB()
+    uut = './loop'
+    job = db.add_job(uut)
+    job.set_handlers("foo_comparator", "./checker_sh.sh")
+    a = AsyncChecker(db, job, uut,"ONE","TWO", None)
+    a.start()

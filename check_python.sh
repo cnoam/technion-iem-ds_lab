@@ -11,6 +11,8 @@
 # any other value - failure of some sort
 echo running $0 $1 $2 $3 $4
 
+# must have ENV_VAR $UUT_TIMEOUT defined and have int value (seconds)
+
 function Usage()
 {
     echo "Usage:"
@@ -36,10 +38,9 @@ tar xf $INPUT_TAR
 
 # do not remove the tempdir, to allow for postmortem
 
-# run the exe. what's its name?
 EXE=main.py
 echo --- about to run: python $EXE $INPUT_DATA
-/usr/bin/time  -f "run time: %U user %S system"  python $EXE $INPUT_DATA > output
+/usr/bin/time  -f "run time: %U user %S system"  timeout $UUT_TIMEOUT python $EXE $INPUT_DATA > output
 echo --- finished the tested run.
 set +e
 
