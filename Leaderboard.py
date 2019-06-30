@@ -29,12 +29,12 @@ class Leaderboard():
     def __init__(self, jobsDb):
         self.jobsDb = jobsDb
 
-    def show(self):
+    def show(self, ex_name):
         """
         Create an html page with the top 5 jobs, sorted by increasing runtime.
         :return: html page
         """
-        s = html_pre + "<h1>Leader board!</h1> <br><br>"
+        s = html_pre + "<h1>Leader board for exercise {}</h1> <br><br>".format(ex_name)
         s += "<h2>Showing top {} results</h2><br>".format(self.max_lines_to_display)
         s += """<table>
         <tr>
@@ -45,6 +45,9 @@ class Leaderboard():
 
         jobs = self.jobsDb.jobs.values()
         completed = list(filter(lambda  job: job.status == 'completed', jobs))
+
+        # leave only jobs that do not have attribute 'exercise_number' or having it and value is ex_name
+        completed = list(filter(lambda j: (not hasattr(j, 'exercise_name')) or j.exercise_name == ex_name, completed))
 
         # sort by ascending run_time
         completed.sort(key=lambda x: x.run_time)

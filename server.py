@@ -130,7 +130,7 @@ def get_job_stat(job_id):
 def show_leaderboard():
     import Leaderboard
     board = Leaderboard.Leaderboard(_job_status_db)
-    return board.show()
+    return board.show('3')
 
 def wrap_html_source(text):
     """
@@ -163,7 +163,7 @@ def handle_file_async(package_under_test, ex_type, ex_number, reference_input, r
     :param reference_output: 
     :return: html page showing link to the tracking page
     """
-    new_job = _job_status_db.add_job(package_under_test)
+    new_job = _job_status_db.add_job((ex_type, ex_number),package_under_test)
 
     # decide here (until I move to a better place) what is the proper (executor,handler) for a given (ex_type,ex_number)
     if ex_number >= 4:

@@ -79,9 +79,15 @@ class AsyncChecker(threading.Thread):
         # uncomment the next lines only for special debug.
         # if there is a bug, the code here should crash, and the web server will return 500 as it should!
         #
-        # except Exception as ex:
-        #     logger.error("This should never happen:" + str(ex))
-        #     self.job_status.job_completed(exit_code=-200,run_time = 0, stdout = None, stderr = None)
+        except Exception as ex:
+             logger.error("This should never happen:" + str(ex))
+             self.job_db.job_completed(self.job_status,
+                                      exit_code=-500,
+                                      run_time=None,
+                                      stdout=None,
+                                      stderr=None
+                                      )
+             raise
         finally:
             if self.completion_cb is not None:
                 self.completion_cb()

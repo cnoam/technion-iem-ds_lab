@@ -15,13 +15,13 @@ class JobStatus():
         exit_code: None| int
        """
 
-    def __init__(self, id, filename):
+    def __init__(self, job_id,exercise_name, filename):
         """
-        :param id:
+        :param job_id: job ID (unique value)
         :param filename: <string> file name to check, in the format [optional prefix]nnnnnn_mmmmmm.tar.gz
         """
         self.status = 'pending'
-        self.job_id = id
+        self.job_id = job_id
         self.run_time = None  # will hold the duration
         self.stdout = None
         self.stderr = None
@@ -29,6 +29,7 @@ class JobStatus():
         self.start_time = None  # will hold the wallclock time when started
         self.comparator_file_name = None
         self.executor_file_name = None
+        self.exercise_name = exercise_name # used to identify for which exercise/lab number this job is related.
 
         matches = re.findall(r"(\d+)_(\d+).", filename)
         if len(matches)==0 :
@@ -84,7 +85,7 @@ class JobStatusDB():
     # in Docker, every container restart, the local filesystem is cleaned
     # so '/logs' is mounted on the host's file system
     pickle_file_name = '/logs/job_status.pickle'
-
+    pickle_file_name = r'c:\users\cnoam\desktop\job_status.pickle'
     def __init__(self):
         self.jobs = {}
         self.lock = Lock()
@@ -93,14 +94,16 @@ class JobStatusDB():
             with  open(self.pickle_file_name, "rb") as f:
                 self.jobs = pickle.load(f)
         except FileNotFoundError as ex:
-            pass
+            raise # pass
 
-    def add_job(self, package_file_name):
+        pass
+
+    def add_job(self, ex_type_name, package_file_name):
         """Create a new job object, give it ID, put it in the db
         :return the new JobStatus object
         """
-        jobid = random.randint(1,1000)
-        j = JobStatus(jobid, package_file_name)
+        jobid = random.randint(1,10000)
+        j = JobStatus(jobid, ex_type_name[1], package_file_name)
         self.jobs[jobid] = j
         return j
 
