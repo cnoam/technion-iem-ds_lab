@@ -75,7 +75,7 @@ if [ $num_exe -ne 1 ]; then
     exit 41
 fi
 echo --- about to run: $EXE $INPUT_DATA
-/usr/bin/time  -f "run time: %U user %S system" $EXE $INPUT_DATA > output
+/usr/bin/time  -f "run time: %U user %S system" timeout $UUT_TIMEOUT $EXE $INPUT_DATA > output
 echo --- finished the tested run.
 set +e
 # The direct compare is good for hw1 and 2 but not for 3
