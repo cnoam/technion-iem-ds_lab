@@ -10,6 +10,7 @@ True
 import os
 import re
 import sys
+from server_codes import ExitCode
 from frozendict import frozendict
 
 
@@ -112,7 +113,7 @@ def check(file_name_a, file_name_b):
     """
     reference = parse_result_file(file_name_a)
     tested_output = parse_result_file(file_name_b)
-    return  0 if compare(reference, tested_output) else 42
+    return  0 if compare(reference, tested_output) else ExitCode.COMPARE_FAILED
 
 
 if __name__ == "__main__":

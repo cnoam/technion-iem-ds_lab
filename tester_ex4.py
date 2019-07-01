@@ -72,5 +72,5 @@ def check(file_name_a, file_name_b):
 
 if __name__ == "__main__":
     #    exit(test())
-
-    exit( 0 if check(sys.argv[1], sys.argv[2]) else 42 )
+    from server_codes import ExitCode
+    exit(0 if check(sys.argv[1], sys.argv[2]) else ExitCode.COMPARE_FAILED)

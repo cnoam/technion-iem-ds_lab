@@ -1,7 +1,7 @@
 import threading
 import subprocess
 import re
-
+from server_codes import ExitCode
 from logger_init import init_logger
 logger = init_logger('asyncChecker')
 
@@ -73,17 +73,19 @@ class AsyncChecker(threading.Thread):
 
         except subprocess.TimeoutExpired:
             logger.warning("job timed out. timeout set to "+ str(self.timeout_sec) + " seconds")
-            exit_code = completed_proc.returncode
+            exit_code = ExitCode.TIMEOUT
             run_time = None
         except subprocess.CalledProcessError:
-            exit_code=-100
+            exit_code= ExitCode.PROCESS_ERROR
             run_time=None
         finally:
+            out = completed_proc.stdout.decode('utf-8') if completed_proc is not None else None
+            err = completed_proc.stderr.decode('utf-8') if completed_proc is not None else None
             self.job_db.job_completed(self.job_status,
                                       exit_code= exit_code,
                                       run_time=run_time,
-                                      stdout=completed_proc.stdout.decode('utf-8'),
-                                      stderr=completed_proc.stderr.decode('utf-8')
+                                      stdout=out,
+                                      stderr=err
                                       )
 
             if self.completion_cb is not None:
