@@ -21,6 +21,7 @@ class RegexError(BaseException):
 class ParseError(BaseException):
     pass
 
+regex = r"^Cluster (\d+):\s*\(([\d+,\s*]+)\)\s*,?.*=\s*(\w*),.* ([\d.]+)"
 
 def parse_cluster(string):
     """
@@ -31,8 +32,7 @@ def parse_cluster(string):
     :param string: one line with the above syntax
     :return: {"id": "6", "tuple": tuple<int> , "dominant": "KIRK", "purity": "0.876" }
     """
-    prog = re.compile(  # TODO: move the prog to outer scope so it is done once
-         r"^Cluster (\d+):\s*\(([\d+,\s*]+)\)\s*,.*=\s*(\w*),.* ([\d.]+)")
+    prog = re.compile(regex)
     result = prog.findall(string)
     if len(result) != 1:  # must have exactly one match
         raise RegexError("Failed to match regex. line=" + string)
@@ -58,9 +58,11 @@ def parse_result_file(filename):
                 line = fin.readline()
                 x.append(parse_cluster(line))
             root[linkage] = x
+            # eat optional empty line
+            where = fin.tell()
             line = fin.readline()
-            if not len(line) and not (link == 2):
-                raise ParseError("line should be empty:" + line)
+            if len(line.strip()) > 0:
+                fin.seek(where)  #  undo the read of the non empty line
     return root
 
 
@@ -115,8 +117,17 @@ def check(file_name_a, file_name_b):
     tested_output = parse_result_file(file_name_b)
     return  0 if compare(reference, tested_output) else ExitCode.COMPARE_FAILED
 
+def _match(string):
+    prog = re.compile(regex)
+    result = prog.findall(string)
+    return len(result) == 1
 
 if __name__ == "__main__":
+    assert _match('Cluster 2: (2) dominant label = PRAD, purity = 1')
+    assert _match('Cluster 22: (2) dominant label = PRAD, purity = 1')
+    assert _match('Cluster 2: (2 , 33) dominant label = PRAD, purity = 1')
+    assert _match('Cluster 2: (2) dominant label = PRAD, purity = 0.9887')
+
     #  exit(test())
     print("ex3: comparing {} and {}".format(sys.argv[1], sys.argv[2]))
     good = check(sys.argv[1], sys.argv[2])
