@@ -4,6 +4,8 @@ import re
 import pickle
 from threading import Lock
 
+from logger_init import init_logger
+logger = init_logger('job_status')
 
 class JobStatus():
     """
@@ -85,7 +87,7 @@ class JobStatusDB():
     # in Docker, every container restart, the local filesystem is cleaned
     # so '/logs' is mounted on the host's file system
     pickle_file_name = '/logs/job_status.pickle'
-    pickle_file_name = r'c:\users\cnoam\desktop\job_status.pickle'
+    
     def __init__(self):
         self.jobs = {}
         self.lock = Lock()
@@ -94,9 +96,7 @@ class JobStatusDB():
             with  open(self.pickle_file_name, "rb") as f:
                 self.jobs = pickle.load(f)
         except FileNotFoundError as ex:
-            raise # pass
-
-        pass
+            logger.warning("pickle file not found")
 
     def add_job(self, ex_type_name, package_file_name):
         """Create a new job object, give it ID, put it in the db
@@ -121,8 +121,11 @@ class JobStatusDB():
         # forward to the job, and then update the "disk database"
         with self.lock:  # verify multi thread access will not corrupt the pickle
             job._job_completed(exit_code, run_time,stdout, stderr)
-            with open(self.pickle_file_name, "wb") as f:
-                pickle.dump(self.jobs, f)
+            try:
+                with open(self.pickle_file_name, "wb") as f:
+                    pickle.dump(self.jobs, f)
+            except:
+                logger.exception("Could not write pickle file")
 
     def __str__(self):
         s = "LOCKED " if self.lock.locked() else ""
