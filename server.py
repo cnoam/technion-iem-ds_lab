@@ -151,8 +151,27 @@ def handle_file(package_under_test,ex_type, ex_number, reference_input, referenc
         if completionCb is not None:
             completionCb()
         return rv
-    
-    
+
+
+def _get_config_for_ex(ex_number):
+    # decide here (until I move to a better place) what is the proper (executor,handler,timeout)
+    #    for a given (ex_type,ex_number)
+    if ex_number >= 4:
+        matcher = "./tester_ex{}.py".format(ex_number)
+        exec = "./check_python.sh"
+        timeout = 300
+    elif ex_number == 3:
+        matcher = "./tester_ex{}.py".format(ex_number)
+        exec= "./checker.sh"
+        timeout = 50
+    else:
+        matcher = None
+        exec = "./checker.sh"
+        timeout = 1000
+
+    return matcher, exec, timeout
+
+
 def handle_file_async(package_under_test, ex_type, ex_number, reference_input, reference_output,completionCb):
     """
     handle the supplied file: unpack, build, run, compare to golden reference.
@@ -164,19 +183,8 @@ def handle_file_async(package_under_test, ex_type, ex_number, reference_input, r
     :return: html page showing link to the tracking page
     """
     new_job = _job_status_db.add_job((ex_type, ex_number),package_under_test)
-
-    # decide here (until I move to a better place) what is the proper (executor,handler) for a given (ex_type,ex_number)
-    if ex_number >= 4:
-        new_job.comparator_file_name = "./tester_ex{}.py".format(ex_number)
-        new_job.executor_file_name = "./check_python.sh"
-    elif ex_number == 3:
-        new_job.comparator_file_name = "./tester_ex{}.py".format(ex_number)
-        new_job.executor_file_name = "./checker.sh"
-    else:
-        new_job.comparator_file_name = None
-        new_job.executor_file_name = "./checker.sh"
-
-    async_task = AsyncChecker(_job_status_db, new_job, package_under_test, reference_input, reference_output, completionCb)
+    new_job.comparator_file_name, new_job.executor_file_name, timeout = _get_config_for_ex(ex_number)
+    async_task = AsyncChecker(_job_status_db, new_job, package_under_test, reference_input, reference_output, completionCb, timeout_sec=timeout)
     async_task.start()
     return render_template('job_submitted.html', job_id= new_job.job_id)
 
