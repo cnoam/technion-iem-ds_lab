@@ -40,7 +40,7 @@ tar xf $INPUT_TAR
 
 EXE=main.py
 echo --- about to run: python $EXE $INPUT_DATA
-/usr/bin/time  -f "run time: %U user %S system"  timeout $UUT_TIMEOUT python $EXE $INPUT_DATA > output
+/usr/bin/time  -f "run time: %U user %S system"  timeout $UUT_TIMEOUT unshare -r -n python $EXE $INPUT_DATA > output
 echo --- finished the tested run.
 set +e
 

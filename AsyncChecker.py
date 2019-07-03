@@ -93,8 +93,7 @@ class AsyncChecker(threading.Thread):
         logger.info("thread {} exiting".format(self.getName()))
 
 
-if __name__ == "__main__":
-
+def _check_timeout():
     # check that the timeout is applied to the process spawned by the shell which is spawned by the python process.
     from job_status import JobStatus, JobStatusDB
     db = JobStatusDB()
@@ -103,3 +102,15 @@ if __name__ == "__main__":
     job.set_handlers("foo_comparator", "./checker_sh.sh")
     a = AsyncChecker(db, job, uut,"ONE","TWO", None)
     a.start()
+
+def _check_network_ban():
+    from job_status import JobStatus, JobStatusDB
+    db = JobStatusDB()
+    uut = './ping.sh'
+    job = db.add_job(uut)
+    job.set_handlers("foo_comparator", "./checker_sh.sh")
+    a = AsyncChecker(db, job, uut, "ONE", "TWO", None)
+    a.start()
+
+if __name__ == "__main__":
+    _check_network_ban()
