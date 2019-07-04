@@ -22,6 +22,7 @@ class ExitCode(IntEnum):
     TIMEOUT        = 124, 'timeoue expired', ''
     TIMEOUT_KILL   = 128+9, 'timeoue expired with SIGKILL', ''
     PROCESS_ERROR  = 50, 'process terminated with error', 'your code crashed'
+    SERVER_ERROR   = 500, 'internal server error'
 
     @staticmethod
     def values():

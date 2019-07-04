@@ -6,7 +6,8 @@ from server_codes import ExitCode
 
 def show_jobs(job_status_db):
     """
-    create a nice table with all the jobs past and present
+    create a nice table with all the jobs past and present.
+    This is a View of the JobStatusDb ( as in MVC )
     :return: html page
     """
     from Leaderboard import html_pre
@@ -34,7 +35,9 @@ def show_jobs(job_status_db):
         exit_code = j.exit_code
         if j.exit_code in ExitCode.values():
             exit_code = ExitCode(j.exit_code).name
+
+        link_to_job = '<a href=check_job_status/%d' % j.job_id + '>%d'% j.job_id + '</a>'
         s += "<tr> <td>{}</td> <td>{}</td> <td>{}</td> <td>{}</td> <td>{}</td> <td>{}</td></tr>".\
-            format(when,j.filename,j.job_id, run_time,j.status,exit_code)
+            format(when,j.filename, link_to_job, run_time,j.status,exit_code)
     s += "</table>"
     return s

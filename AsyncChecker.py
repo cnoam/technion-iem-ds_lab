@@ -71,6 +71,10 @@ class AsyncChecker(threading.Thread):
             exit_code=completed_proc.returncode
             run_time=prog_run_time
 
+        except OSError as ex:
+            logger.error("Internal error: " + str(ex))
+            exit_code = ExitCode.SERVER_ERROR
+            run_time = None
         except subprocess.TimeoutExpired:
             logger.warning("job timed out. timeout set to "+ str(self.timeout_sec) + " seconds")
             exit_code = ExitCode.TIMEOUT
