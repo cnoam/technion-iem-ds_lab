@@ -81,19 +81,19 @@ set +e
 # The direct compare is good for hw1 and 2 but not for 3
 # compare_ignore_spaces output $GOLDEN
 
-# for ex3:
 echo Comparing output , $GOLDEN
 python $COMPARATOR output $GOLDEN
 retVal=$?
+
+# ExitCode.COMPARE_FAILED == 42
 if [ $retVal -eq 42 ]; then
     echo "Sorry: output is different from the required output"
-    exit 42
 fi
 if [ $retVal -ne 0 ]; then
     echo "Sorry: some error occured. Please examine the STDERR"
-    exit 43
 fi
 popd
+exit $retVal
 echo ---------- run OK
 
 

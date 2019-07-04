@@ -17,7 +17,10 @@ class ExitCode(IntEnum):
 
     SUCCESS        =  0, 'SUCCESS', ''
     COMPARE_FAILED = 42, 'output does not match', ''
-    TIMEOUT        = 43, 'timeoue expired', ''
+
+    # http: // git.savannah.gnu.org / cgit / coreutils.git / tree / src / timeout.c
+    TIMEOUT        = 124, 'timeoue expired', ''
+    TIMEOUT_KILL   = 128+9, 'timeoue expired with SIGKILL', ''
     PROCESS_ERROR  = 50, 'process terminated with error', 'your code crashed'
 
     @staticmethod
