@@ -32,6 +32,8 @@ logging.basicConfig(level=logging.INFO,
 
 
 class Uploader():
+    POLLING_INTERVAL_sec = 4
+
     def __init__(self, host_server, upload_url):
         """
         :param host_server: host name of the server where the file will be uploaded to. e.g. "homework.com"
@@ -88,14 +90,20 @@ class Uploader():
 
     def _work(self):
         """worker thread proc"""
-        while len(self.input_queue) > 0:
-            reply = self._check_server_status()
-            while reply['num_jobs'] >= MAX_JOBS:
-                logging.info("Sleeping until the server is not busy...")
-                time.sleep(4)
+        try:
+            while len(self.input_queue) > 0:
                 reply = self._check_server_status()
-            self._upload(self.input_queue.pop(0))
-        logging.info("worker finished")
+                if reply['num_jobs'] >= MAX_JOBS:
+                    logging.info("Sleeping until the server is not busy...")
+                while reply['num_jobs'] >= MAX_JOBS:
+                    time.sleep(self.POLLING_INTERVAL_sec)
+                    reply = self._check_server_status()
+                self._upload(self.input_queue.pop(0))
+            logging.info("worker finished")
+        except requests.Timeout as ex:
+            logging.fatal("Server not timed out! " + str(ex))
+        except requests.ConnectionError as ex:
+            logging.error('Connection to server failed. Check if the server is running.\n' + str(ex))
 
     def wait(self):
         self.worker_thread.join()
@@ -120,6 +128,8 @@ if __name__ == "__main__":
     upload_url = "/submit/hw/" + str(ex_num)
     directory_to_extract_to = tempfile.mkdtemp(dir='.')
 
+    print("using up to %d concurrent uploads" % MAX_JOBS)
+
     try:
         with zipfile.ZipFile(path_to_zip_file, 'r') as zip_ref:
             zip_ref.extractall(directory_to_extract_to)
@@ -130,6 +140,7 @@ if __name__ == "__main__":
                 uploader.enqueue_for_upload(os.path.join(root, name))
         uploader.start_uploading()
         uploader.wait()
+
     finally:
         try:
             shutil.rmtree(directory_to_extract_to)
