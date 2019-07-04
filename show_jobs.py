@@ -12,8 +12,9 @@ def show_jobs(job_status_db):
     from Leaderboard import html_pre
     if job_status_db.lock.locked():
         return "Table is currently locked. Try again soon"
-    s = html_pre + "<h1>Job table</h1> <br><br>"
-    s += """<table>
+    s = html_pre + "<h1>Job table</h1> <br>" \
+                   "<h3>You can sort by any column by clicking the header</h3><br>"
+    s += """<table class="sortable">
             <tr>
             <th>Date</th>
             <th>Job name</th>

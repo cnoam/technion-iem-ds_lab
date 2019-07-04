@@ -21,6 +21,7 @@ tr:nth-child(even) {
 }
 </style>
 </head>
+<script src="/static/sorttable.js"></script
 <body>"""
 
 
@@ -53,7 +54,7 @@ class Leaderboard():
         """
         s = html_pre + "<h1>Leader board for exercise {}</h1> <br><br>".format(ex_name)
         s += "<h2>Showing top {} results</h2><br>".format(self.max_lines_to_display)
-        s += """<table>
+        s += """<table  class="sortable">
         <tr>
         <th>Date</th>
         <th>Job name</th>
@@ -69,7 +70,7 @@ class Leaderboard():
         s += "</table>"
 
         # --- another table for the not so lucky
-        s += """<table>
+        s += """<table  class="sortable">
         <tr>
         <th>Date</th>
         <th>Job name</th>
