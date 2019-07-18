@@ -26,7 +26,7 @@ tr:nth-child(even) {
 
 
 class Leaderboard():
-    max_lines_to_display = 10
+    max_lines_to_display = 30
 
     def __init__(self, jobsDb):
         self.jobsDb = jobsDb
@@ -60,13 +60,15 @@ class Leaderboard():
         <th>Job name</th>
         <th>Job ID</th>
         <th>Duration [sec]</th>
+        <th>Score</th>
         </tr>"""
 
         completed = self._prepare_best_jobs(ex_name)
 
         for j in completed[0: self.max_lines_to_display]:
             when = j.start_time.ctime() if j.start_time is not None else "?"
-            s += "<tr> <td>{}</td> <td>{}</td> <td>{}</td> <td>{:.3f}</td> </tr>".format(when ,j.filename, j.job_id, j.run_time)
+            s += "<tr> <td>{}</td> <td>{}</td> <td>{}</td> <td>{:.3f}</td> <td>{}</td> </tr>".format(when,
+                 j.filename, j.job_id, j.run_time, j.score)
         s += "</table>"
 
         # --- another table for the not so lucky

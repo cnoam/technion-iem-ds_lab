@@ -19,7 +19,7 @@ if sys.version_info.major != 3:
 logger = init_logger('server')
 
 UPLOAD_FOLDER = r'/tmp'
-ALLOWED_EXTENSIONS = {'gz','xz'}
+ALLOWED_EXTENSIONS = {'gz','xz','zip','py'}
 
 MAX_CONCURRENT_JOBS = os.cpu_count()
 if MAX_CONCURRENT_JOBS is None:
@@ -128,9 +128,15 @@ def get_job_stat(job_id):
 
 @app.route('/leaderboard')
 def show_leaderboard():
+    return show_leaderboard_(3)
+
+@app.route('/leaderboard/<string:ex_name>')
+def show_leaderboard_(ex_name):
+    if len(ex_name)> 20:
+        return "Formatting your hard drive will start in 10 seconds", 200
     import Leaderboard
     board = Leaderboard.Leaderboard(_job_status_db)
-    return board.show('3')
+    return board.show(ex_name)
 
 def wrap_html_source(text):
     """
@@ -156,7 +162,11 @@ def handle_file(package_under_test,ex_type, ex_number, reference_input, referenc
 def _get_config_for_ex(ex_number):
     # decide here (until I move to a better place) what is the proper (executor,handler,timeout)
     #    for a given (ex_type,ex_number)
-    if ex_number >= 4:
+    if ex_number == 9:
+        matcher = "./tester_ex{}.py".format(ex_number)
+        exec = "./python_runner_9.sh"
+        timeout = 300
+    elif ex_number >= 4:
         matcher = "./tester_ex{}.py".format(ex_number)
         exec = "./check_python.sh"
         timeout = 300

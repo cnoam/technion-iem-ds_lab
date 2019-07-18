@@ -17,7 +17,7 @@ class ExitCode(IntEnum):
 
     SUCCESS        =  0, 'SUCCESS', ''
     COMPARE_FAILED = 42, 'output does not match', ''
-
+    COMPARE_FAILED2 = 43, 'obsolete code'
     # http: // git.savannah.gnu.org / cgit / coreutils.git / tree / src / timeout.c
     TIMEOUT        = 124, 'timeoue expired', ''
     TIMEOUT_KILL   = 128+9, 'timeoue expired with SIGKILL', ''

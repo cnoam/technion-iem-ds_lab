@@ -32,6 +32,7 @@ class JobStatus():
         self.comparator_file_name = None
         self.executor_file_name = None
         self.exercise_name = exercise_name # used to identify for which exercise/lab number this job is related.
+        self.score = 0
 
         matches = re.findall(r"(\d+)_(\d+).", filename)
         if len(matches)==0 :
@@ -44,13 +45,13 @@ class JobStatus():
         self.comparator_file_name = comparator_file_name
         self.executor_file_name = executor_file_name
 
-
-    def _job_completed(self, exit_code, run_time,stdout, stderr):
+    def _job_completed(self, exit_code, run_time,stdout, stderr, score = None):
         self.status = 'completed' if exit_code == 0 else 'failed'
         self.run_time = run_time
         self.exit_code = exit_code
         self.stdout = stdout
         self.stderr = stderr
+        self.score = score
 
     def __str__(self):
         s = "{id} {stat} . \t".format(id = self.job_id, stat=self.status)
