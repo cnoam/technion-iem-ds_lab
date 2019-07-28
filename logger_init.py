@@ -10,7 +10,7 @@ def _in_docker():
 
 try:
     if not _in_docker():
-        _log_path = "/home/noam/data/logs/"
+        _log_path = "/home/cnoam/data/logs/"
 except FileNotFoundError:
     # On windows there is no such file
     _log_path = "./"

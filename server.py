@@ -13,6 +13,8 @@ import job_status
 import  show_jobs
 from AsyncChecker import AsyncChecker
 
+from workshop_db import WorkshopDb
+
 if sys.version_info.major != 3:
     raise Exception("must use python 3")
 
@@ -83,6 +85,13 @@ def _upload_file(ex_type, ex_number, compare_to_golden = False):
         if file.filename == '':
             flash('No selected file')
             return redirect(request.url)
+
+        if ex_type == 'lab' and ex_number==9:
+            # this is the workshop
+            w = WorkshopDb()
+            if not w.try_add_submission(file.filename):
+                return 'You have reached your max submissions count', 200
+
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             if filename != file.filename:
@@ -130,13 +139,12 @@ def get_job_stat(job_id):
 def show_leaderboard():
     return show_leaderboard_(3)
 
-@app.route('/leaderboard/<string:ex_name>')
+@app.route('/leaderboard/<int:ex_name>')
 def show_leaderboard_(ex_name):
-    if len(ex_name)> 20:
-        return "Formatting your hard drive will start in 10 seconds", 200
+
     import Leaderboard
     board = Leaderboard.Leaderboard(_job_status_db)
-    return board.show(ex_name)
+    return board.show(str(ex_name))
 
 def wrap_html_source(text):
     """

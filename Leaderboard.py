@@ -52,6 +52,10 @@ class Leaderboard():
          and count it as single entry.
         :return: html page
         """
+
+        if ex_name == '9':
+            return  self.show_leaderboard_9()
+
         s = html_pre + "<h1>Leader board for exercise {}</h1> <br><br>".format(ex_name)
         s += "<h2>Showing top {} results</h2><br>".format(self.max_lines_to_display)
         s += """<table  class="sortable">
@@ -85,4 +89,22 @@ class Leaderboard():
             when = j.start_time.ctime() if j.start_time is not None else "?"
             s += "<tr> <td>{}</td> <td>{}</td> <td>{}</td> <td>{:.3f}</td> </tr>".format(when ,j.filename, j.job_id, j.run_time)
         s += "</table>"
+        return s
+
+    def show_leaderboard_9(self):
+        from workshop_db import  WorkshopDb
+        w = WorkshopDb()
+
+        s = html_pre + "<h1>Leader board for {}</h1> <br><br>".format('workshop')
+
+        s += """<table  class="sortable">
+               <tr>
+               <th>Job name</th>
+               <th>Score</th>
+               </tr>"""
+        for key,value in w.get_scores().items():
+            s += "<tr> <td>{}</td>  <td>{:.3f}</td>  </tr>".format(
+                key, value[0])
+        s += "</table>"
+
         return s
