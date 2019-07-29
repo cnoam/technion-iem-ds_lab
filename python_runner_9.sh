@@ -32,7 +32,7 @@ function extract()
     echo "already a python file"
   fi
   if [[ $1 == *.zip ]]; then
-     gzunip $1
+     unzip $1
   fi
   if [[ ( $1 == *.xz ) || ( $1 == *.gz ) ]]; then
      tar xf $1
@@ -55,15 +55,17 @@ cp $TEST_RUNNER $TESTDIR/
 cp $INPUT_TAR $TESTDIR/
 cd $TESTDIR
 extract $INPUT_TAR
-
 # do not remove the tempdir, to allow for postmortem
+python3 -m venv ./venv
+pip install -r requirements.txt
+set +e
 /usr/bin/time  -f "run time: %U user %S system"  timeout $UUT_TIMEOUT python3 $TEST_RUNNER $INPUT_DATA
 retVal=$?
 echo --- finished the tested run.
-set +e
+
 
 if [ $retVal -ne 0 ]; then
-    echo "Sorry: some error occured. Please examine the STDERR"
+    echo "Sorry: some error occurred. Please examine the STDERR"
     exit 43
 fi
 echo ---------- run OK

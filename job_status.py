@@ -45,7 +45,7 @@ class JobStatus():
         self.comparator_file_name = comparator_file_name
         self.executor_file_name = executor_file_name
 
-    def _job_completed(self, exit_code, run_time,stdout, stderr, score = None):
+    def _job_completed(self, exit_code, run_time,stdout, stderr, score=None):
         self.status = 'completed' if exit_code == 0 else 'failed'
         self.run_time = run_time
         self.exit_code = exit_code
@@ -74,7 +74,8 @@ class JobStatus():
                 server.wrap_html_source(self.stdout),
                 server.wrap_html_source(self.stderr))
         elif self.status == 'completed':
-            text = 'Job {} completed in {:.3f} seconds.'.format(self.job_id, self.run_time)
+            run_time = self.run_time if self.run_time is not None else 0.0
+            text = 'Job {} completed in {:.3f} seconds.'.format(self.job_id, run_time)
         else:
             raise ValueError('impossible state:'+ str(self.status) )
         return text
@@ -118,10 +119,10 @@ class JobStatusDB():
                 count += 1
         return count
 
-    def job_completed(self, job,  exit_code, run_time,stdout, stderr):
+    def job_completed(self, job,  exit_code, run_time,stdout, stderr, score=None):
         # forward to the job, and then update the "disk database"
         with self.lock:  # verify multi thread access will not corrupt the pickle
-            job._job_completed(exit_code, run_time,stdout, stderr)
+            job._job_completed(exit_code, run_time,stdout, stderr,score=score)
             try:
                 with open(self.pickle_file_name, "wb") as f:
                     pickle.dump(self.jobs, f)

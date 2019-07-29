@@ -1,87 +1,66 @@
 """
 check_ex9 -- the outcome of Python workshop
 
-Check the performance  of the supplied classifier on the data wil supply here
+Check the performance  of the supplied classifier on the data
+that will be supplied here
 Upon return, the JobStatusDb will be updated.
 """
+
 
 import re
 import sys
 import os
 
-dest_dir = './tmp/'
-testing_dir = './testing/'
+
+from logger_init import init_logger
+logger = init_logger(__name__)
+
+path ='/home/cnoam/Downloads/'
+user_data_dir = '.'
+test_data_dir = path + 'reuters_test_data'
+secret_labels_dir = path + 'secret_labels'
 try:
-    from main import run_me
-except ImportError:
-    print("Could not import main.run_me")
+    from model import Model
+except ImportError as ex:
+    logger.error("Could not import Model: " +  str(ex))
     exit(1)
 
 
-def create_test_set():
-    """The full set is 20000 documents.
-    Keep 3000 aside for testing, and give them the rest (17K)
-    """
-    import random
-    import shutil
-    src_dir='/home/noam/technion-iem-ds_lab/data/reut/'
-    file_pattern = 'reut2-%03d.sgm'
-    num_files = 22
-    shuffled = list(range(num_files))
-    random.shuffle(shuffled)
-    training = shuffled[:17]
-    testing = shuffled[17:]
-    count = 0
-    for i in training:
-        src = src_dir + file_pattern % i
-        dest = dest_dir + ('f-%03d.sgm'% count)
-        shutil.copy(src, dest)
-        count += 1
-
-    os.makedirs(testing_dir,exist_ok=True)
-    for i in testing:
-        src = src_dir + file_pattern % i
-        dest = testing_dir + ('f-%03d.sgm'%i)
-        shutil.copy(src, dest)
+def _load_reference_labels(path):
+    import pickle
+    import os
+    with open(os.path.join(path,'ref_id_to_labels.pickle'), 'rb') as fin:
+        ref = pickle.load(fin)
+    return ref
 
 
 if __name__ == "__main__":
+ 
     from server_codes import ExitCode
-    from sklearn.metrics import f1_score
-
-    # put aside some of the files for testing, and the rest will be used for training.
-    if not os.path.exists(testing_dir):
-        create_test_set()
-
-    # TODO: make sure we don't have any of the forbidden modules
-    res = []
-    try:
-
-        res = run_me(dest_dir)
-        # TODO: make sure we don't have any of the forbidden modules
-    except:
-        print("Exception raised in tested code")
-        exit(ExitCode.PROCESS_ERROR)
-    if type(res) != list:
-        print("Expected type list from tested code")
-        exit(ExitCode.PROCESS_ERROR)
-
     from sklearn.preprocessing import MultiLabelBinarizer
-    mlb = MultiLabelBinarizer()
+    import sklearn.metrics
 
-    # TODO: allow partial match: compute the F1 for each label, and then average them for the one record.
-
-    #TODO: each team can submit up to 3 codes. The final score is the best of three.
-
-    true_values = [('acq',), ('acq',), ('de','uk'), ('uk','de')]
-    true_values_bin = mlb.fit_transform(true_values)
-    score =0
     try:
-        res_bin = mlb.fit_transform(res)
-        score = f1_score(true_values_bin, res_bin, average='macro')
-    except ValueError as ex:
-        print("result value is invalid: " + str(ex))
+        model = Model(user_data_dir)
+
+        reference = _load_reference_labels(secret_labels_dir).values()
+
+        predictions = model.predict(test_data_dir)
+    except Exception as ex:
+        logger.error("Exception raised in tested code:" + str(ex))
         exit(ExitCode.PROCESS_ERROR)
-    print("F1 score: ",score)
-    #TODO save the score to some DB. Can I use the same pickle? force reloading?
+    if type(predictions) != list:
+        logger.error("Expected type list from tested code")
+        exit(ExitCode.PROCESS_ERROR)
+    mlb = MultiLabelBinarizer()
+    r = mlb.fit_transform(reference)
+    p = mlb.transform(predictions)
+    score = 0
+    try:
+        score = sklearn.metrics.f1_score(y_true=r, y_pred=p, average='macro')
+    except ValueError as ex:
+        logger.error("result value is invalid: " + str(ex))
+        exit(ExitCode.PROCESS_ERROR)
+    print("F1 score: ", score)
     exit(0)
+

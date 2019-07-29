@@ -32,6 +32,7 @@ class AsyncChecker(threading.Thread):
 
     def run(self):
         import datetime
+        import workshop_db
         self.job_status.status='running' # todo use enums!
         self.job_status.start_time = datetime.datetime.today()
         completed_proc = None
@@ -85,17 +86,34 @@ class AsyncChecker(threading.Thread):
         finally:
             out = completed_proc.stdout.decode('utf-8') if completed_proc is not None else None
             err = completed_proc.stderr.decode('utf-8') if completed_proc is not None else None
+            score = self._extract_score(out)
             self.job_db.job_completed(self.job_status,
                                       exit_code= exit_code,
                                       run_time=run_time,
                                       stdout=out,
-                                      stderr=err
+                                      stderr=err,
+                                      score=score
                                       )
 
+            # HACK for the workshop:
+            if score is not None:
+                import os
+                name = os.path.basename(self.package_under_test)
+                workshop_db.WorkshopDb().add_score(name,score)
             if self.completion_cb is not None:
                 self.completion_cb()
         logger.info("thread {} exiting".format(self.getName()))
 
+    def _extract_score(self, stdout):
+        """try to find a score in the format F1 score = 0.987.
+        To avoid user's malicious printing, use the bottom most print
+        F1 score: 0.987
+        :return: the score in float, or None if can't find it
+        """
+        import re
+        last_line = stdout[stdout.rfind('F1') : ]
+        match = re.findall(r'F1 score:\s*([.\d]+)', last_line)
+        return float(match[0]) if len(match) == 1 else None  #  expect a single match
 
 if __name__ == "__main__":
 
