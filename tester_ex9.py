@@ -50,8 +50,8 @@ if __name__ == "__main__":
     except Exception as ex:
         logger.error("Exception raised in tested code:" + str(ex))
         exit(ExitCode.PROCESS_ERROR)
-    if type(predictions) != list:
-        logger.error("Expected type list from tested code")
+    if type(predictions) != tuple:
+        logger.error("Expected type tuple from tested code")
         exit(ExitCode.PROCESS_ERROR)
     mlb = MultiLabelBinarizer()
     r = mlb.fit_transform(reference)
