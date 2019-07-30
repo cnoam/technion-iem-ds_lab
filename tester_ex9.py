@@ -15,10 +15,6 @@ import os
 from logger_init import init_logger
 logger = init_logger(__name__)
 
-path ='/home/cnoam/Downloads/'
-user_data_dir = '.'
-test_data_dir = path + 'reuters_test_data'
-secret_labels_dir = path + 'secret_labels'
 try:
     from model import Model
 except ImportError as ex:
@@ -39,6 +35,11 @@ if __name__ == "__main__":
     from server_codes import ExitCode
     from sklearn.preprocessing import MultiLabelBinarizer
     import sklearn.metrics
+    
+    dpath = os.environ['DATA_PATH']  # will raise KeyError if not found
+    user_data_dir = '.'
+    test_data_dir = dpath + '/reuters_test_data'
+    secret_labels_dir = dpath + '/secret_labels'
 
     try:
         model = Model(user_data_dir)

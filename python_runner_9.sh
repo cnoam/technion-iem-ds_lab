@@ -5,7 +5,6 @@
 #1. extract the files
 #2. copy tester_ex9.py to the same dir
 #3. run tester_ex9
-#4. write the score (if success) to the DB
 # return value:
 # 0     full success
 # any other value - failure of some sort
@@ -51,14 +50,14 @@ TESTDIR=`mktemp -d`
 rm -rf $TESTDIR
 mkdir $TESTDIR
 cp server_codes.py $TESTDIR
+cp logger_init.py $TESTDIR
 cp $TEST_RUNNER $TESTDIR/
 cp $INPUT_TAR $TESTDIR/
 cd $TESTDIR
 extract $INPUT_TAR
 # do not remove the tempdir, to allow for postmortem
-python3 -m venv ./venv
-pip install -r requirements.txt
 set +e
+export DATA_PATH=/app/data
 /usr/bin/time  -f "run time: %U user %S system"  timeout $UUT_TIMEOUT python3 $TEST_RUNNER $INPUT_DATA
 retVal=$?
 echo --- finished the tested run.

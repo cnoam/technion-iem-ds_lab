@@ -173,7 +173,7 @@ def _get_config_for_ex(ex_number):
     if ex_number == 9:
         matcher = "./tester_ex{}.py".format(ex_number)
         exec = "./python_runner_9.sh"
-        timeout = 300
+        timeout = 2000
     elif ex_number >= 4:
         matcher = "./tester_ex{}.py".format(ex_number)
         exec = "./check_python.sh"

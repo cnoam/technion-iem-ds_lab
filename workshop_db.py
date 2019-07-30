@@ -15,8 +15,8 @@ class WorkshopDb:
     """A wrapper around a 'database' of the submissions.
     It isolates the internal implementation from the user of the class
     """
-    MAX_SUBMISSIONS = 3
-    pickle_file_name = 'workshop_db.pickle'
+    MAX_SUBMISSIONS = 300000
+    pickle_file_name = '/logs/workshop_db.pickle'
     rw_lock = threading.Lock()
 
     def __init__(self):
