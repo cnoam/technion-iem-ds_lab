@@ -25,7 +25,7 @@ except ImportError as ex:
 def _load_reference_labels(path):
     import pickle
     import os
-    with open(os.path.join(path,'ref_id_to_labels.pickle'), 'rb') as fin:
+    with open(os.path.join(path,'reference_labels.pickle'), 'rb') as fin:
         ref = pickle.load(fin)
     return ref
 
@@ -44,7 +44,7 @@ if __name__ == "__main__":
     try:
         model = Model(user_data_dir)
 
-        reference = _load_reference_labels(secret_labels_dir).values()
+        reference = _load_reference_labels(secret_labels_dir)
 
         predictions = model.predict(test_data_dir)
     except Exception as ex:
