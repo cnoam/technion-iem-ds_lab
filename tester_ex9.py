@@ -47,7 +47,7 @@ if __name__ == "__main__":
         reference = _load_reference_labels(secret_labels_dir)
 
         predictions = model.predict(test_data_dir)
-    except Exception as ex:
+    except NotImplementedError as ex:
         logger.error("Exception raised in tested code:" + str(ex))
         exit(ExitCode.PROCESS_ERROR)
     if type(predictions) != tuple:

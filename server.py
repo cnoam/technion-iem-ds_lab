@@ -119,7 +119,7 @@ def _upload_file(ex_type, ex_number, compare_to_golden = False):
 
             return the_reply
             #return redirect(url_for('upload_file', filename=filename))
-    return render_template('upload_homework.html', hw_number = ex_number, num_jobs_running=_job_status_db.num_running_jobs())
+    return render_template('upload_homework_workshop.html', hw_number = ex_number, num_jobs_running=_job_status_db.num_running_jobs())
 
 
 @app.route('/submit/goldi/<ex_type>/<int:number>', methods=['GET', 'POST'])
