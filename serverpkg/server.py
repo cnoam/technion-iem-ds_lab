@@ -135,22 +135,62 @@ def handle_file(package_under_test,ex_type, ex_number, reference_input, referenc
 
 
 def _get_config_for_ex(ex_number):
-    # decide here (until I move to a better place) what is the proper (executor,handler,timeout)
-    #    for a given (ex_type,ex_number)
-    if ex_number >= 4:
-        matcher = "./tester_ex{}.py".format(ex_number)
-        exec = "./check_python.sh"
-        timeout = 300
-    elif ex_number == 3:
-        matcher = "./tester_ex{}.py".format(ex_number)
-        exec= "./checker.sh"
-        timeout = 50
-    else:
-        matcher = None
-        exec = "./checker.sh"
-        timeout = 1000
+    """choose the proper (executor,handler,...)
+       for a given (ex_type,ex_number)
+       :raise ValueError, FileNotFoundError
+       :return tuple(matcher, executor, timeout)
 
-    return matcher, exec, timeout
+    config file in json.
+    if the config file is invalid, refuse to run.
+    if a value is invalid, refuse to run ( e.g. matcher/exec not found or not executable )
+
+    Example:
+  [ {
+     "id": 4,
+     "matcher" : "./tester_ex4.py",
+     "exec" :"./check_python.sh",
+     "timeout" : 300
+     "calc_score": true <<<<<<< optional. default to false
+     },
+{
+     "id": "any",
+     "matcher" : "./tester_ex{}.py",
+     "exec" :"./check_python.sh",
+     "timeout" : 5,
+     "blocking": true <<<<<<< optional. default to false
+     }
+]
+    """
+    import json
+    with open("hw_settings.json","r") as fin:
+        params = json.load(fin)
+
+    for e in params:
+        if e['id'] == ex_number:
+            break
+    else:
+        raise ValueError("ex {} not found in the config file".format(ex_number))
+
+    matcher = e['matcher']
+    executor = e['exec']
+    timeout = e['timeout']
+    _check_sanity(matcher, executor, timeout)
+    return matcher, executor, timeout
+
+
+def _check_sanity(comparator_file_name, executor_file_name, timeout):
+    """try to catch obvious problems in the parameters.
+    :raise  internal error (because it is server side problem)
+    """
+    if timeout < 1 or timeout > 3000:
+        raise Exception("timeout out of range")
+
+    # check that the file exists and is executable
+    import os
+    if not os.path.isfile(comparator_file_name):
+        raise  Exception("comparator not found")
+    if not (os.path.isfile(executor_file_name) and os.access(executor_file_name, os.X_OK)):
+        raise Exception("executor not found or not X")
 
 
 def handle_file_async(package_under_test, ex_type, ex_number, reference_input, reference_output,completionCb):
@@ -164,7 +204,10 @@ def handle_file_async(package_under_test, ex_type, ex_number, reference_input, r
     :return: html page showing link to the tracking page
     """
     new_job = _job_status_db.add_job((ex_type, ex_number),package_under_test)
-    new_job.comparator_file_name, new_job.executor_file_name, timeout = _get_config_for_ex(ex_number)
+    try:
+        new_job.comparator_file_name, new_job.executor_file_name, timeout = _get_config_for_ex(ex_number)
+    except ValueError as ex:
+        return "invalid ex number? ex=%s    "% str(ex),HTTPStatus.BAD_REQUEST
     async_task = AsyncChecker(_job_status_db, new_job, package_under_test, reference_input, reference_output, completionCb, timeout_sec=timeout)
     async_task.start()
     return render_template('job_submitted.html', job_id= new_job.job_id)

@@ -1,5 +1,5 @@
 # to build:
-# docker build -f Dockerfile_base .
+# docker build -t python_cmake_base -f Dockerfile_base .
 FROM  python:3.6-stretch
 MAINTAINER Noam Cohen "cnoam@technion.ac.il"
 RUN apt update -y && \
