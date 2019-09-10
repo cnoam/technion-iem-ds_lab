@@ -4,7 +4,7 @@ import re
 import pickle
 from threading import Lock
 
-from logger_init import init_logger
+from .logger_init import init_logger
 logger = init_logger('job_status')
 
 class JobStatus():
@@ -61,7 +61,7 @@ class JobStatus():
         return s
 
     def as_html(self):
-        import server
+        import serverpkg
         if self.status in ( 'pending', 'running'):
             text = 'Job {} is currently {}'.format( self.job_id, self.status)
         elif self.status == 'failed':
@@ -70,8 +70,8 @@ class JobStatus():
                 {}<br><br>
                 STDERR:<br>
                 {}""".format(self.job_id, self.exit_code,
-                server.wrap_html_source(self.stdout),
-                server.wrap_html_source(self.stderr))
+                             serverpkg.wrap_html_source(self.stdout),
+                             serverpkg.wrap_html_source(self.stderr))
         elif self.status == 'completed':
             text = 'Job {} completed in {:.3f} seconds.'.format(self.job_id, self.run_time)
         else:
@@ -102,6 +102,7 @@ class JobStatusDB():
         """Create a new job object, give it ID, put it in the db
         :return the new JobStatus object
         """
+        assert isinstance(ex_type_name, tuple)
         jobid = random.randint(1,10000)
         j = JobStatus(jobid, ex_type_name[1], package_file_name)
         self.jobs[jobid] = j

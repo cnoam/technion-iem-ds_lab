@@ -1,4 +1,4 @@
-from server_codes import ExitCode
+from .server_codes import ExitCode
 
 html_pre = """<!DOCTYPE html>
 <html>

@@ -1,8 +1,8 @@
 import threading
 import subprocess
 import re
-from server_codes import ExitCode
-from logger_init import init_logger
+from .server_codes import ExitCode
+from .logger_init import init_logger
 logger = init_logger('asyncChecker')
 
 def _extract_run_time(string):
@@ -100,10 +100,10 @@ class AsyncChecker(threading.Thread):
 if __name__ == "__main__":
 
     # check that the timeout is applied to the process spawned by the shell which is spawned by the python process.
-    from job_status import JobStatus, JobStatusDB
+    from .job_status import JobStatus, JobStatusDB
     db = JobStatusDB()
     uut = './loop'
-    job = db.add_job(uut)
+    job = db.add_job(('hw',4),uut)
     job.set_handlers("foo_comparator", "./checker_sh.sh")
     a = AsyncChecker(db, job, uut,"ONE","TWO", None)
     a.start()

@@ -1,0 +1,13 @@
+[ {
+     "id": 4,
+     "matcher" : "./tester_ex4.py",
+     "exec" :"./check_py.sh",
+     "timeout" : 20
+     },
+{
+     "id": "any",
+     "matcher" : "./tester_ex{}.py",
+     "exec" :"./check_python.sh",
+     "timeout" : 5
+     }
+]

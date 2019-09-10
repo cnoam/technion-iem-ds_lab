@@ -2,7 +2,7 @@
 # because when importing this module into server.py, the object
 # is not yet created.
 # also, try minimizing the sharing of global state
-from server_codes import ExitCode
+from .server_codes import ExitCode
 
 def show_jobs(job_status_db):
     """
@@ -10,7 +10,7 @@ def show_jobs(job_status_db):
     This is a View of the JobStatusDb ( as in MVC )
     :return: html page
     """
-    from Leaderboard import html_pre
+    from .leaderboard import html_pre
     if job_status_db.lock.locked():
         return "Table is currently locked. Try again soon"
     s = html_pre + "<h1>Job table</h1> <br>" \

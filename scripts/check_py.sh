@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash -ex
 
 #This script takes as input a tar.{gz,xz} file that contains source code in python.
 #
@@ -24,17 +24,34 @@ if [ -z "$4" ]; then
  exit 40
 fi
 
+# extract a file from [py,zip,gz,xz] to current dir
+function extract()
+{
+  echo extracting $1
+  if [[ $1 == *.py ]]; then
+    echo "already a python file"
+    cp $1 main.py # use cp to keep same behavior as other files - the original is untouched(?).
+  elif [[ $1 == *.zip ]]; then
+     unzip $1
+  elif [[ ( $1 == *.xz ) || ( $1 == *.tar.gz ) ]]; then
+     tar xf $1
+  elif [[ ( $1 == *.gz ) ]]; then
+     mv $1 ./main.py.gz
+     gunzip ./main.py.gz
+  fi
+}
+
 INPUT_TAR=`realpath $1`
 INPUT_DATA=`realpath $2`
 GOLDEN=`realpath $3`
 COMPARATOR=`realpath $4`
 
 TESTDIR=`mktemp -d`
-pushd ./tmp
+pushd /tmp
 rm -rf $TESTDIR
 mkdir $TESTDIR
 cd $TESTDIR
-tar xf $INPUT_TAR
+extract $INPUT_TAR
 
 # do not remove the tempdir, to allow for postmortem
 
@@ -45,7 +62,7 @@ echo --- finished the tested run.
 set +e
 
 echo Comparing output , $GOLDEN
-python $COMPARATOR output $GOLDEN
+python3 $COMPARATOR output $GOLDEN
 retVal=$?
 if [ $retVal -eq 42 ]; then
     echo "Sorry: output is different from the required output"

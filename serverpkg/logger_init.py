@@ -8,12 +8,13 @@ def _in_docker():
         return 'docker' in ifh.read()
 
 
-try:
-    if not _in_docker():
-        _log_path = "/home/noam/data/logs/"
-except FileNotFoundError:
-    # On windows there is no such file
-    _log_path = "./"
+if not _in_docker():
+    _log_path = "./logs/"
+    try:
+        os.mkdir(_log_path)
+    except FileExistsError:
+        pass
+
 
 # prepare a logger to my liking
 def init_logger(logger_name):

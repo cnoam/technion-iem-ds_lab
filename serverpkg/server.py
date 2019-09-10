@@ -1,36 +1,16 @@
 # written and tested on linux only
 # It will not work on Windows
 
-import sys
-import os
 from http import HTTPStatus
 from flask import Flask, flash, request, redirect, url_for,render_template
 from werkzeug.utils import secure_filename
 import subprocess
-from logger_init import init_logger
 
-import job_status
-import  show_jobs
-from AsyncChecker import AsyncChecker
+from serverpkg import * # the right way?!
 
-if sys.version_info.major != 3:
-    raise Exception("must use python 3")
-
-logger = init_logger('server')
-
-UPLOAD_FOLDER = r'/tmp'
-ALLOWED_EXTENSIONS = {'gz','xz'}
-
-MAX_CONCURRENT_JOBS = os.cpu_count()
-if MAX_CONCURRENT_JOBS is None:
-    MAX_CONCURRENT_JOBS = 2  # rumored bug in getting the cpu count
-
-app = Flask(__name__, template_folder='./templates')
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
-app.secret_key = b'3456o00sdf045'
-
-_job_status_db = job_status.JobStatusDB()
+from .asyncChecker import AsyncChecker
+from . import _job_status_db
+from . import show_jobs
 
 
 def allowed_file(filename):
@@ -87,6 +67,7 @@ def _upload_file(ex_type, ex_number, compare_to_golden = False):
             filename = secure_filename(file.filename)
             if filename != file.filename:
                 return "Please use a valid file name (without spaces) (e.g. ex560.tar.gz)",HTTPStatus.BAD_REQUEST
+            # BUG: two concurrent sessions with the same file name will overwrite each other
             saved_file_name = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             try:
                 file.save(saved_file_name)
@@ -128,8 +109,8 @@ def get_job_stat(job_id):
 
 @app.route('/leaderboard')
 def show_leaderboard():
-    import Leaderboard
-    board = Leaderboard.Leaderboard(_job_status_db)
+    from .leaderboard import Leaderboard
+    board = Leaderboard(_job_status_db)
     return board.show('3')
 
 def wrap_html_source(text):
