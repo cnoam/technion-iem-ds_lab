@@ -16,7 +16,7 @@ echo running $0 $1 $2 $3 $4
 function Usage()
 {
     echo "Usage:"
-    echo "checker  some_file.tar.gz input_data_file the_needed_output full/path/to/compare/script"
+    echo "checker_cmake  some_file.tar.gz input_data_file the_needed_output full/path/to/compare/script"
 }
 
 # write to stdout the content of f after trimming some of the white spaces
@@ -50,7 +50,7 @@ GOLDEN=`realpath $3`
 COMPARATOR=`realpath $4`
 
 TESTDIR=`mktemp -d`
-pushd ./tmp
+pushd /tmp
 rm -rf $TESTDIR
 mkdir $TESTDIR
 cd $TESTDIR
@@ -78,8 +78,6 @@ echo --- about to run: $EXE $INPUT_DATA
 /usr/bin/time  -f "run time: %U user %S system" timeout $UUT_TIMEOUT $EXE $INPUT_DATA > output
 echo --- finished the tested run.
 set +e
-# The direct compare is good for hw1 and 2 but not for 3
-# compare_ignore_spaces output $GOLDEN
 
 echo Comparing output , $GOLDEN
 python $COMPARATOR output $GOLDEN

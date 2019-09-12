@@ -1,28 +1,37 @@
 <!doctype html>
+{% with messages = get_flashed_messages() %}
+   {% if messages %}
+     <ul class="flashes">
+        {% for message in messages %}
+            <div class="message_flash"><font size="8" color="red"> {{ message }}</font></div>
+        {% endfor %}
+    </ul>
+  {% endif %}
+ {% endwith %}
+
 <html>
 <body>
     <title>Upload your homework for self checking</title>
     <h1>Course 94201: Upload new File for exercise {{hw_number}}</h1>
-    <p>This tool accepts ONLY files of type tar.gz, or tar.xz with a size limit of 15MB.</p>
+    <p>This tool accepts ONLY files of type {tar.gz, tar.xz ,py} with a size limit of 15MB.</p>
     After uploading, the server will run the checker with your file. <br>
     The checker will try to build your code (if needed) and run it with input.<br>
     The output of your code will then be compared to the output we got from the reference (secret) implementation.<br>
-    If the outputs are identical, you will get a "well done!" message;<br>
+
     <br>
-    in exercise 3, the computation is long, so I changed the code to run asynchronous:
-    You upload your code, then see a job ID, and you can check the status of the job from your browser.
+    Upload your code, then see a job ID, and you can check the status of the job from your browser.
     <br><br>
 
 <br>
     At this time, this tool is for your checking yourself. You can use it as many times you need<br>
 <br>
-    If you want to see the server's code: <a href="https://github.com/noam1023/technion-iem-ds_lab">HERE</a><br>
     <br>
     <strong>It does NOT replace submitting to Moodle!</strong>
 <br><br>
+    {% if num_jobs_running > 0 %}
     Currently there are {{num_jobs_running}} jobs running. Having more than 2 will slow everyone's 'wallclock' runtime (but results will still be accurate).<br>
-    You are being <a href="https://www.youtube.com/watch?v=8fvTxv46ano"> watched.</a>
-    <br><br>
+    {% endif %}
+    <hr><br>
     <form method=post enctype=multipart/form-data>
       <input type=file name=file>
       <input type=submit value=Upload>

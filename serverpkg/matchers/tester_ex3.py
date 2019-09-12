@@ -7,10 +7,10 @@ Check if two text files are considered equal for course 94201, 2019-05 homework 
 >>> check("50_output.txt", "50_output_permuted.txt")
 True
 """
-import os
+
 import re
 import sys
-from server_codes import ExitCode
+from serverpkg.server_codes import ExitCode
 from frozendict import frozendict
 
 

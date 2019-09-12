@@ -3,8 +3,9 @@ import random
 import re
 import pickle
 from threading import Lock
-
+import utils
 from .logger_init import init_logger
+#from serverpkg.server import wrap_html_source
 logger = init_logger('job_status')
 
 class JobStatus():
@@ -70,8 +71,8 @@ class JobStatus():
                 {}<br><br>
                 STDERR:<br>
                 {}""".format(self.job_id, self.exit_code,
-                             serverpkg.wrap_html_source(self.stdout),
-                             serverpkg.wrap_html_source(self.stderr))
+                             utils.wrap_html_source(self.stdout),
+                             utils.wrap_html_source(self.stderr))
         elif self.status == 'completed':
             text = 'Job {} completed in {:.3f} seconds.'.format(self.job_id, self.run_time)
         else:
@@ -86,7 +87,7 @@ class JobStatusDB():
     # keep the pickle file in a place that will persist!
     # in Docker, every container restart, the local filesystem is cleaned
     # so '/logs' is mounted on the host's file system
-    pickle_file_name = '/logs/job_status.pickle'
+    pickle_file_name = '/logs/job_status.pickle'  # TODO: move to a better location in the file system
     
     def __init__(self):
         self.jobs = {}

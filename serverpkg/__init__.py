@@ -18,6 +18,8 @@ if MAX_CONCURRENT_JOBS is None:
 app = Flask(__name__, template_folder='./templates')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+app.config['matcher_dir'] = 'serverpkg/matchers'
+app.config['runner_dir'] = 'serverpkg/runners'
 app.secret_key = b'3456o00sdf045'
 
 _job_status_db = job_status.JobStatusDB()

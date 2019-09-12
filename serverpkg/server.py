@@ -13,14 +13,23 @@ from . import _job_status_db
 from . import show_jobs
 
 
+class SanityError(Exception):
+    pass
+
+
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+def _running_on_dev_machine():
+    """:return True if this is my dev machine"""
+    import socket
+    return socket.gethostname() == 'noam-cohen-u.iem.technion.ac.il'
+
 @app.route('/',methods = ['GET'])
 def index():
-    return render_template('index.html')
+    return render_template('index.html', running_locally = _running_on_dev_machine())
 
 
 @app.route('/status', methods=['GET'])
@@ -42,6 +51,14 @@ def show_jobs_():
 def upload_file(ex_type, number):
     if _job_status_db.num_running_jobs() >= MAX_CONCURRENT_JOBS:
         return "Busy! try again in a few seconds.", HTTPStatus.SERVICE_UNAVAILABLE
+
+    try:
+        _get_config_for_ex(number)
+    except KeyError:
+        return "We don't have such a value" , HTTPStatus.NOT_FOUND
+    except SanityError as ex:
+        return "<H1>Message to Tutor</H1>There is something wrong in the config file for this exercise.<br>"\
+               "Please fix and submit again. <br><strong>Error: " + str(ex) + '</strong>'
     return _upload_file(ex_type, number)
 
 
@@ -91,6 +108,8 @@ def _upload_file(ex_type, ex_number, compare_to_golden = False):
 
             return the_reply
             #return redirect(url_for('upload_file', filename=filename))
+        else:
+            flash("Please check the file type!")
     return render_template('upload_homework.html', hw_number = ex_number, num_jobs_running=_job_status_db.num_running_jobs())
 
 
@@ -113,14 +132,6 @@ def show_leaderboard():
     board = Leaderboard(_job_status_db)
     return board.show('3')
 
-def wrap_html_source(text):
-    """
-    wrap the text with html tags to force the browser show the code as was created without corrupting it
-    """
-    if text is None:
-        text = "ERROR: got None value!"
-    return "<html><pre><code> " + text +  "</code></pre></html>"
-
 
 def handle_file(package_under_test,ex_type, ex_number, reference_input, reference_output, completionCb):
     use_async = True
@@ -135,29 +146,29 @@ def handle_file(package_under_test,ex_type, ex_number, reference_input, referenc
 
 
 def _get_config_for_ex(ex_number):
-    """choose the proper (executor,handler,...)
+    """choose the proper (runner,matcher,...)
        for a given (ex_type,ex_number)
-       :raise ValueError, FileNotFoundError
+       :raise KeyError, FileNotFoundError, SanityError
        :return tuple(matcher, executor, timeout)
 
     config file in json.
     if the config file is invalid, refuse to run.
-    if a value is invalid, refuse to run ( e.g. matcher/exec not found or not executable )
+    if a value is invalid, refuse to run ( e.g. matcher/runner not found or not executable )
 
     Example:
   [ {
      "id": 4,
      "matcher" : "./tester_ex4.py",
-     "exec" :"./check_python.sh",
+     "runner" :"./check_py.sh",
      "timeout" : 300
-     "calc_score": true <<<<<<< optional. default to false
+     "calc_score": true <<<<<<< [FUTURE]optional. default to false
      },
 {
-     "id": "any",
-     "matcher" : "./tester_ex{}.py",
-     "exec" :"./check_python.sh",
+     "id": 1,
+     "matcher" : "./exact_match.py",
+     "runner" :"./check_cmake.sh",
      "timeout" : 5,
-     "blocking": true <<<<<<< optional. default to false
+     "blocking": true <<<<<<< [FUTURE]optional. default to false
      }
 ]
     """
@@ -169,10 +180,10 @@ def _get_config_for_ex(ex_number):
         if e['id'] == ex_number:
             break
     else:
-        raise ValueError("ex {} not found in the config file".format(ex_number))
+        raise KeyError("ex {} not found in the config file".format(ex_number))
 
     matcher = e['matcher']
-    executor = e['exec']
+    executor = e['runner']
     timeout = e['timeout']
     _check_sanity(matcher, executor, timeout)
     return matcher, executor, timeout
@@ -183,14 +194,16 @@ def _check_sanity(comparator_file_name, executor_file_name, timeout):
     :raise  internal error (because it is server side problem)
     """
     if timeout < 1 or timeout > 3000:
-        raise Exception("timeout out of range")
+        raise SanityError("timeout out of range")
 
     # check that the file exists and is executable
     import os
-    if not os.path.isfile(comparator_file_name):
-        raise  Exception("comparator not found")
-    if not (os.path.isfile(executor_file_name) and os.access(executor_file_name, os.X_OK)):
-        raise Exception("executor not found or not X")
+    assert app.config['matcher_dir']
+    if not os.path.isfile(os.path.join(app.config['matcher_dir'],comparator_file_name)):
+        raise SanityError("comparator not found: "+comparator_file_name)
+    full_path = os.path.join(app.config['runner_dir'],executor_file_name)
+    if not (os.path.isfile(full_path) and os.access(full_path, os.X_OK)):
+        raise SanityError("executor not found or not eXcutable: " + executor_file_name)
 
 
 def handle_file_async(package_under_test, ex_type, ex_number, reference_input, reference_output,completionCb):
@@ -205,10 +218,16 @@ def handle_file_async(package_under_test, ex_type, ex_number, reference_input, r
     """
     new_job = _job_status_db.add_job((ex_type, ex_number),package_under_test)
     try:
-        new_job.comparator_file_name, new_job.executor_file_name, timeout = _get_config_for_ex(ex_number)
-    except ValueError as ex:
-        return "invalid ex number? ex=%s    "% str(ex),HTTPStatus.BAD_REQUEST
-    async_task = AsyncChecker(_job_status_db, new_job, package_under_test, reference_input, reference_output, completionCb, timeout_sec=timeout)
+        comparator, runner, timeout = _get_config_for_ex(ex_number)
+    except KeyError as ex:
+        return "invalid ex number? exception=%s    "% str(ex),HTTPStatus.BAD_REQUEST
+
+    # convert to full path
+    new_job.set_handlers(os.path.join(app.config['matcher_dir'], comparator),
+                         os.path.join(app.config['runner_dir'], runner))
+
+    async_task = AsyncChecker(_job_status_db, new_job, package_under_test,
+                              reference_input, reference_output, completionCb, timeout_sec=timeout)
     async_task.start()
     return render_template('job_submitted.html', job_id= new_job.job_id)
 
@@ -240,10 +259,11 @@ def handle_file_blocking(package_under_test, reference_input, reference_output):
     except subprocess.CalledProcessError as ex:
         message = 'Your code failed. Please check the reported output\n\n' + completed_proc.stderr.decode('utf-8')
 
-    return wrap_html_source(message)
+    import utils
+    return utils.wrap_html_source(message)
 
-
-if __name__ == '__main__':
-    logger.warning("Starting the server as standalone")
-    app.run(host="0.0.0.0", port=8000)
-
+# moved to run.py
+# if __name__ == '__main__':
+#     logger.warning("Starting the server as standalone")
+#     app.run(host="0.0.0.0", port=8000)
+#

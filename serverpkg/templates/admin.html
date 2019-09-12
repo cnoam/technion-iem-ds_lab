@@ -1,8 +1,25 @@
 <html>
-<H1>Admin</H1>
+{% with messages = get_flashed_messages() %}
+   {% if messages %}
+     <ul class="flashes">
+        {% for message in messages %}
+         <div class="message_flash">{{ message }}</div>
+        {% endfor %}
+    </ul>
+  {% endif %}
+ {% endwith %}
+
+<H1>Checker Admin Page </H1>
 <body>
 Upload config file
+<form method=post enctype=multipart/form-data>
+      <input type=file name=file>
+      <input type=submit value=Upload>
+    </form>
+
 <hr>
+<a href="./">HOME</a><br>
+<a href="./admin/show_ex_config"> show ex configuration</a><br>
 <a href="./logout"> LOGOUT</a>
 </body>
 </html>
