@@ -17,9 +17,22 @@ For support, send mail to the repository maintainer
 - docker
 - ssh access (for management and file uploading) 
 ## Installing
-TBD
+
+on the server that will run the checker:
+* install docker: ```sudo apt install docker```
+* clone the repo and cd into it
+* create required directories:
+  ```mkdir -p $HOME/data/logs```
+* build the docker:
+```docker build -t server . ```
+* run the server in a new container:
+```./scripts/run_docker.sh server ```
+* check that the server is up by accessing http://\<server IP>/
+
+
 # Running tests of the server
 TBD
+
 #Contributing
  use pull requests in github
 
@@ -110,14 +123,14 @@ $ ssh myhost
 
 # Running the web application
 The webapp runs as a Docker container.<br>
-First, build the container:
+First, build the container: (in the project root directory)
 > docker build **.** -t server:<current_tag>
  
 then run it
-> ./run_docker.sh server
+> cd scripts && ./run_docker.sh server
 
 OR - if you just want to build - stop - start fresh again:
-> ./again.sh
+> cd scripts &&  ./again.sh
 
 
 # Reliability
@@ -131,3 +144,17 @@ There is known problem that occasionally the server hangs.
   * execution time (for each exercise we set a timeout value)
   * network connectivity (not implemented yet)
     
+# Debugging
+During development, it is easier to run only the python code without Docker:
+ ``` 
+ cd ~/checker
+ source venv/bin/activate
+ python3 run.py
+  ```
+  
+  To run with gunicorn (one step closer to the realworld configuration):
+  ```
+  cd ~/checker
+  source venv/bin/activate
+  gunicorn server:app
+```

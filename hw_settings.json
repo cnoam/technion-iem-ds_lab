@@ -5,6 +5,12 @@
      "runner" :"check_cmake.sh",
      "timeout" : 5
      },
+     {
+     "id": 2,
+     "matcher" : "exact_match.py",
+     "runner" :"check_sh.sh",
+     "timeout" : 15
+     },
 {
      "id": 4,
      "matcher" : "tester_ex4.py",
