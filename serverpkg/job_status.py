@@ -95,7 +95,10 @@ class JobStatusDB():
         # load current values from pickle
         try:
             with  open(self.pickle_file_name, "rb") as f:
-                self.jobs = pickle.load(f)
+                try:
+                    self.jobs = pickle.load(f)
+                except ModuleNotFoundError as ex:
+                    logger.error("Failed reading pickle", ex)
         except FileNotFoundError as ex:
             logger.warning("pickle file not found")
 
