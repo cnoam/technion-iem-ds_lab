@@ -4,7 +4,8 @@
                "id": 1,
                "matcher": "exact_match.py",
                "runner": "check_cmake.sh",
-               "timeout": 5
+               "timeout": 5,
+               "allowed_extension": ["tar.gz", "zip"]
           },
           {
                "id": 2,
@@ -25,8 +26,18 @@
                "id": 1,
                "matcher": "exact_match.py",
                "runner": "check_git_patch.sh",
-               "timeout": 30
+               "timeout": 30,
+               "allowed_extension": ["patch"]
           }
+          ],
+      "94219": [
+     {
+          "id": 1,
+          "matcher": "exact_match.py",
+          "runner": "check_java_file.sh",
+          "timeout": 5,
+          "allowed_extension": ["java"]
+     }
      ]
 }
     

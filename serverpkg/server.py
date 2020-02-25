@@ -95,8 +95,8 @@ def _upload_file(course_num, ex_type, ex_number, compare_to_golden = False):
 
             try:
                 postfix = "GOLD" if compare_to_golden else ""
-                reference_output = "./data/ref_{}_{}_output{}".format(ex_type,ex_number,postfix)
-                reference_input  = "./data/ref_{}_{}_input{}".format(ex_type, ex_number, postfix)
+                reference_output = "./data/{}/ref_{}_{}_output{}".format(course_num,ex_type,ex_number,postfix)
+                reference_input  = "./data/{}/ref_{}_{}_input{}".format(course_num,ex_type, ex_number, postfix)
                 logger.info(" ref files supplied to handler: " + reference_input + "   " + reference_output)
                 logger.info("TAR file: " + saved_file_name)
                 the_reply = handle_file(saved_file_name,course_num, ex_type, ex_number, reference_input, reference_output,
@@ -283,7 +283,7 @@ def handle_file_blocking(package_under_test, reference_input, reference_output):
     return utils.wrap_html_source(message)
 
 
-course_id = _get_configured_course_ids()
+#TODO: fix it - the file is not available during the test run in /tmp    course_id = _get_configured_course_ids()
 # moved to run.py
 # if __name__ == '__main__':
 #     logger.warning("Starting the server as standalone")

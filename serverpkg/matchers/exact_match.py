@@ -1,3 +1,4 @@
+import subprocess
 import sys
 from serverpkg.server_codes import ExitCode
 
@@ -7,6 +8,8 @@ def check(file1, file2):
         test_output = f1.read()
     with open(file2) as f2:
         ref_output = f2.read()
+    p = subprocess.run(['diff', file1,file2], stdout=subprocess.PIPE)
+    print(p.stdout)
     return  test_output == ref_output
 
 
