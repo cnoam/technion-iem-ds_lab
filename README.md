@@ -10,6 +10,8 @@ It is developed as a small scale alternative to [CodeRunner](https://moodle.org/
 #### Maturity: In development, pre alpha.
 
 # Getting Started
+<b>TODO</b> -- add content <br>
+
 For support, send mail to the repository maintainer
 
 ## System Requirements
@@ -48,7 +50,8 @@ As the tutor, you have to prepare:
 
 These coding parts are called __runner__ and __matcher__ (aka comparator)
 
-Choosing the runner and matcher is done by reading a configuration file.
+Choosing the runner and matcher is done by reading a configuration file (located at {rootdir}/hw_settings.json)
+
 You can see the current content in ```host_address/admin/show_ex_config```
    
 Modifying/adding values is by uploading a new version of the file (in the admin page)
@@ -60,19 +63,22 @@ For example,
 
 The config file json will look like:
 ```
-[ {
+{
+"94201":
+ [ {
      "id": 1,
      "matcher" : "exact_match.py",
      "runner" :"check_cmake.sh",
      "timeout" : 5
-     },
-{
+   },
+   {
      "id": 2,
      "matcher" : "tester_ex2.py",
      "runner" :"check_py.sh",
      "timeout" : 20
-     }
-]
+    }
+ ]
+}
 ```    
 
 

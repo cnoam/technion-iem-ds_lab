@@ -9,7 +9,7 @@ if sys.version_info.major != 3:
 logger = init_logger('server')
 
 UPLOAD_FOLDER = r'/tmp'
-ALLOWED_EXTENSIONS = {'gz','xz','py','sh'}
+ALLOWED_EXTENSIONS = {'gz','xz','py','sh','patch'}
 
 MAX_CONCURRENT_JOBS = os.cpu_count()
 if MAX_CONCURRENT_JOBS is None:
@@ -20,6 +20,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 app.config['matcher_dir'] = 'serverpkg/matchers'
 app.config['runner_dir'] = 'serverpkg/runners'
+app.config['assignment_config_file'] = 'hw_settings.json'
 app.secret_key = b'3456o00sdf045'
 
 _job_status_db = job_status.JobStatusDB()

@@ -74,6 +74,8 @@ class JobStatus():
                              utils.wrap_html_source(self.stdout),
                              utils.wrap_html_source(self.stderr))
         elif self.status == 'completed':
+            if self.run_time is None:  # soft fail if the internal state is not perfect
+                self.run_time = 0.0
             text = 'Job {} completed in {:.3f} seconds.'.format(self.job_id, self.run_time)
         else:
             raise ValueError('impossible state:'+ str(self.status) )

@@ -55,7 +55,7 @@ def admin_page():
 
 @app.route("/admin/show_ex_config")
 def show_ex_config():
-    with open('hw_settings.json','r') as fin:
+    with open(app.config['assignment_config_file'],'r') as fin:
         contents = fin.read()
     return render_template('dump_source_code.html', source = contents)
 
@@ -71,7 +71,7 @@ def _upload_and_save():
         flash('No selected file')
         return redirect(request.url)
     if file:
-        file_name = "hw_settings.json"
+        file_name = app.config['assignment_config_file']
         try:
             file.save(file_name)
         except OSError as ex:

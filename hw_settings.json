@@ -1,21 +1,32 @@
-
-[ {
-     "id": 1,
-     "matcher" : "exact_match.py",
-     "runner" :"check_cmake.sh",
-     "timeout" : 5
-     },
-     {
-     "id": 2,
-     "matcher" : "exact_match.py",
-     "runner" :"check_sh.sh",
-     "timeout" : 15
-     },
 {
-     "id": 4,
-     "matcher" : "tester_ex4.py",
-     "runner" :"check_py.sh",
-     "timeout" : 20
-     }
-]
+     "94201": [
+          {
+               "id": 1,
+               "matcher": "exact_match.py",
+               "runner": "check_cmake.sh",
+               "timeout": 5
+          },
+          {
+               "id": 2,
+               "matcher": "exact_match.py",
+               "runner": "check_sh.sh",
+               "timeout": 15
+          },
+          {
+               "id": 4,
+               "matcher": "tester_ex4.py",
+               "runner": "check_py.sh",
+               "timeout": 20
+          }
+     ],
+
+     "94210": [
+          {
+               "id": 1,
+               "matcher": "exact_match.py",
+               "runner": "check_git_patch.sh",
+               "timeout": 30
+          }
+     ]
+}
     

@@ -46,23 +46,24 @@ def show_jobs_():
     """
     return show_jobs.show_jobs(_job_status_db)
 
+
 # noinspection PyPackageRequirements
-@app.route('/submit/<ex_type>/<int:number>', methods=['GET', 'POST'])
-def upload_file(ex_type, number):
+@app.route('/<int:course>/submit/<ex_type>/<int:number>', methods=['GET', 'POST'])
+def upload_file(course,ex_type, number):
     if _job_status_db.num_running_jobs() >= MAX_CONCURRENT_JOBS:
         return "Busy! try again in a few seconds.", HTTPStatus.SERVICE_UNAVAILABLE
 
     try:
-        _get_config_for_ex(number)
-    except KeyError:
-        return "We don't have such a value" , HTTPStatus.NOT_FOUND
+        _get_config_for_ex(course,ex_type,number)
+    except KeyError as ex:
+        return "We don't have such a value. " +  str(ex), HTTPStatus.NOT_FOUND
     except SanityError as ex:
         return "<H1>Message to Tutor</H1>There is something wrong in the config file for this exercise.<br>"\
                "Please fix and submit again. <br><strong>Error: " + str(ex) + '</strong>'
-    return _upload_file(ex_type, number)
+    return _upload_file(course,ex_type, number)
 
 
-def _upload_file(ex_type, ex_number, compare_to_golden = False):
+def _upload_file(course_num, ex_type, ex_number, compare_to_golden = False):
     """ upload homework 'number'
         call a checker and return the result.
         Block here until the checker completes.
@@ -98,8 +99,9 @@ def _upload_file(ex_type, ex_number, compare_to_golden = False):
                 reference_input  = "./data/ref_{}_{}_input{}".format(ex_type, ex_number, postfix)
                 logger.info(" ref files supplied to handler: " + reference_input + "   " + reference_output)
                 logger.info("TAR file: " + saved_file_name)
-                the_reply = handle_file(saved_file_name,ex_type, ex_number, reference_input, reference_output,
-                                        lambda :os.unlink(saved_file_name) )
+                the_reply = handle_file(saved_file_name,course_num, ex_type, ex_number, reference_input, reference_output,
+                                       lambda :os.unlink(saved_file_name))
+                #   None)
             finally:
                 pass
                 # the handle_file() is ASYNC, so at this stage we don't know yet when can the file be deleted.
@@ -110,12 +112,14 @@ def _upload_file(ex_type, ex_number, compare_to_golden = False):
             #return redirect(url_for('upload_file', filename=filename))
         else:
             flash("Please check the file type!")
-    return render_template('upload_homework.html', hw_number = ex_number, num_jobs_running=_job_status_db.num_running_jobs())
+    return render_template('upload_homework.html',
+                           course_number=course_num, hw_number=ex_number,
+                           num_jobs_running=_job_status_db.num_running_jobs())
 
 
-@app.route('/submit/goldi/<ex_type>/<int:number>', methods=['GET', 'POST'])
-def upload_file_golden_ref(ex_type, number):
-    return _upload_file(ex_type, number, compare_to_golden=True)
+@app.route('/<int:course>/submit/goldi/<ex_type>/<int:number>', methods=['GET', 'POST'])
+def upload_file_golden_ref(course,ex_type, number):
+    return _upload_file(course,ex_type, number, compare_to_golden=True)
 
 
 @app.route('/check_job_status/<int:job_id>')
@@ -126,17 +130,19 @@ def get_job_stat(job_id):
         return "job id not found", HTTPStatus.NOT_FOUND
     
 
-@app.route('/leaderboard')
-def show_leaderboard():
+@app.route('/<int:course>/leaderboard')
+def show_leaderboard(course):
+    if not str(course) in course_id:
+        return "course not found", HTTPStatus.NOT_FOUND
     from .leaderboard import Leaderboard
     board = Leaderboard(_job_status_db)
-    return board.show('3')
+    return board.show(str(course))
 
 
-def handle_file(package_under_test,ex_type, ex_number, reference_input, reference_output, completionCb):
+def handle_file(package_under_test,course_number, ex_type, ex_number, reference_input, reference_output, completionCb):
     use_async = True
     if use_async:
-        return handle_file_async(package_under_test, ex_type, ex_number, reference_input, reference_output,completionCb)
+        return handle_file_async(package_under_test, course_number, ex_type, ex_number, reference_input, reference_output,completionCb)
     else:
         logger.warning("this path is not maintained!")
         rv = handle_file_blocking(package_under_test, reference_input, reference_output)
@@ -145,9 +151,18 @@ def handle_file(package_under_test,ex_type, ex_number, reference_input, referenc
         return rv
 
 
-def _get_config_for_ex(ex_number):
+def _get_configured_course_ids():
+    """:returns list of course ID  :type list(string)
+    """
+    import json
+    with open(app.config['assignment_config_file'], "r") as fin:
+        params = json.load(fin)
+        return list(params.keys())
+
+
+def _get_config_for_ex(course_number, ex_type,ex_number):
     """choose the proper (runner,matcher,...)
-       for a given (ex_type,ex_number)
+       for a given (course_number,ex_type,ex_number)
        :raise KeyError, FileNotFoundError, SanityError
        :return tuple(matcher, executor, timeout)
 
@@ -156,26 +171,31 @@ def _get_config_for_ex(ex_number):
     if a value is invalid, refuse to run ( e.g. matcher/runner not found or not executable )
 
     Example:
-  [ {
+  { "94201":[ {
      "id": 4,
      "matcher" : "./tester_ex4.py",
      "runner" :"./check_py.sh",
-     "timeout" : 300
+     "timeout" : 300,
      "calc_score": true <<<<<<< [FUTURE]optional. default to false
      },
-{
+     {
      "id": 1,
      "matcher" : "./exact_match.py",
      "runner" :"./check_cmake.sh",
      "timeout" : 5,
      "blocking": true <<<<<<< [FUTURE]optional. default to false
      }
-]
+    ]
+   }
     """
     import json
-    with open("hw_settings.json","r") as fin:
+    with open(app.config['assignment_config_file'], "r") as fin:
         params = json.load(fin)
-
+    try:
+        params = params[str(course_number)]
+    except KeyError:
+        logger.warn("course number not found in config file")
+        raise KeyError("course number {} not found in the config file".format(course_number))
     for e in params:
         if e['id'] == ex_number:
             break
@@ -200,13 +220,13 @@ def _check_sanity(comparator_file_name, executor_file_name, timeout):
     import os
     assert app.config['matcher_dir']
     if not os.path.isfile(os.path.join(app.config['matcher_dir'],comparator_file_name)):
-        raise SanityError("comparator not found: "+comparator_file_name)
+        raise SanityError("matcher not found: "+comparator_file_name)
     full_path = os.path.join(app.config['runner_dir'],executor_file_name)
     if not (os.path.isfile(full_path) and os.access(full_path, os.X_OK)):
         raise SanityError("executor not found or not eXcutable: " + executor_file_name)
 
 
-def handle_file_async(package_under_test, ex_type, ex_number, reference_input, reference_output,completionCb):
+def handle_file_async(package_under_test, course_number, ex_type, ex_number, reference_input, reference_output,completionCb):
     """
     handle the supplied file: unpack, build, run, compare to golden reference.
     The operation is async (non blocking). A thread is created to handle the request
@@ -218,7 +238,7 @@ def handle_file_async(package_under_test, ex_type, ex_number, reference_input, r
     """
     new_job = _job_status_db.add_job((ex_type, ex_number),package_under_test)
     try:
-        comparator, runner, timeout = _get_config_for_ex(ex_number)
+        comparator, runner, timeout = _get_config_for_ex(course_number, ex_type, ex_number)
     except KeyError as ex:
         return "invalid ex number? exception=%s    "% str(ex),HTTPStatus.BAD_REQUEST
 
@@ -262,6 +282,8 @@ def handle_file_blocking(package_under_test, reference_input, reference_output):
     import utils
     return utils.wrap_html_source(message)
 
+
+course_id = _get_configured_course_ids()
 # moved to run.py
 # if __name__ == '__main__':
 #     logger.warning("Starting the server as standalone")
