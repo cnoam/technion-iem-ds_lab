@@ -32,10 +32,10 @@
           ],
       "94219": [
      {
-          "id": 1,
+          "id": 0,
           "matcher": "exact_match.py",
-          "runner": "check_java_file.sh",
-          "timeout": 5,
+          "runner": "check_java_file_ex0.sh",
+          "timeout": 10,
           "allowed_extension": ["java"]
      }
      ]

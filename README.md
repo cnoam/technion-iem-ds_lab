@@ -1,8 +1,7 @@
 
 # Exercise submission checker
 
-This project is a web server for students to upload, build and execute programming tasks in C++ and Python.
-Java can be easily added.
+This project is a web server for students to upload, build and execute programming tasks in C++,Python, Java etc.
 
 The server runs in a Docker container, on a linux host.
 

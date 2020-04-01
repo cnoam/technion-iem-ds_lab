@@ -81,6 +81,7 @@ class Leaderboard():
         completed = list(filter(lambda  job: job.exit_code == ExitCode.COMPARE_FAILED, self.jobsDb.jobs.values()))
         for j in completed:
             when = j.start_time.ctime() if j.start_time is not None else "?"
-            s += "<tr> <td>{}</td> <td>{}</td> <td>{}</td> <td>{:.3f}</td> </tr>".format(when ,j.filename, j.job_id, j.run_time)
+            runtime = j.run_time if j.run_time is not None else 0.0
+            s += "<tr> <td>{}</td> <td>{}</td> <td>{}</td> <td>{:.3f}</td> </tr>".format(when ,j.filename, j.job_id, runtime)
         s += "</table>"
         return s

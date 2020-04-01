@@ -9,7 +9,7 @@ if sys.version_info.major != 3:
 logger = init_logger('server')
 
 UPLOAD_FOLDER = r'/tmp'
-ALLOWED_EXTENSIONS = {'gz','xz','py','sh','patch','java'} # TODO: replace with per exercise list
+ALLOWED_EXTENSIONS = {'zip','gz','xz','py','sh','patch','java'} # TODO: replace with per exercise list
 
 MAX_CONCURRENT_JOBS = os.cpu_count()
 if MAX_CONCURRENT_JOBS is None:
