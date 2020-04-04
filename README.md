@@ -122,7 +122,7 @@ Before writing a new one, check the existing scripts  - maybe you can use one of
 ```
 $ ssh myhost
 (myhost) $ cd checker
-(myhost) $ git checkout
+(myhost) $ git pull
 (myhost) $ scripts/again.sh
 ```
 

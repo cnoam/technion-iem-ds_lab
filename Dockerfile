@@ -1,4 +1,4 @@
-FROM  python_cmake_base
+FROM  python_cmake_java_base
 MAINTAINER Noam Cohen "cnoam@technion.ac.il"
 
 copy . /app

@@ -1,0 +1,15 @@
+# to build:
+# docker build -t py_java_cpp_base -f Dockerfile_py_java_cpp_base .
+FROM  python_cmake_base:latest
+
+# install Oracle JDK 11 LTS, onto ubuntu 18.04
+ARG JAVA_11_URL="https://download.oracle.com/otn/java/jdk/11.0.6+8/90eb79fb590d45c8971362673c5ab495/jdk-11.0.6_linux-x64_bin.deb"
+#RUN wget --no-cookies --no-check-certificate \
+#  --header "Cookie: oraclelicense=accept-securebackup-cookie" $JAVA_11_URL\
+#  && dpkg -i jdk-11.0.6_linux-x64_bin.deb \
+#  && rm jdk-*.deb \
+#  && javac -version; java -version
+
+
+#install the default  jdk for 18.04 which is jdk 8
+RUN apt-get update && apt-get install -y default-jdk
