@@ -2,7 +2,7 @@
 
 # To run with test web server: python run.py
 
-from serverpkg import app
+from serverpkg.server import app
 
 # see https://help.pythonanywhere.com/pages/Flask/
 

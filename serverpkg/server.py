@@ -1,16 +1,47 @@
 # written and tested on linux only
 # It will not work on Windows
+import sys, os
+if sys.version_info.major != 3:
+    raise Exception("must use python 3")
 
+from .logger_init import init_logger
 from http import HTTPStatus
 from flask import Flask, flash, request, redirect, url_for,render_template
 from werkzeug.utils import secure_filename
 import subprocess
-
-from serverpkg import * # the right way?!
-
 from .asyncChecker import AsyncChecker
-from . import _job_status_db
-from . import show_jobs
+from . import show_jobs, job_status
+
+
+
+
+# -- prepare some global vars
+app = Flask(__name__, template_folder='./templates')
+
+logger = init_logger('server')
+
+
+from . import admin
+
+_job_status_db = job_status.JobStatusDB()
+
+ALLOWED_EXTENSIONS = {'zip','gz','xz','py','sh','patch','java'} # TODO: replace with per exercise list
+MAX_CONCURRENT_JOBS = os.cpu_count()
+if MAX_CONCURRENT_JOBS is None:
+    MAX_CONCURRENT_JOBS = 2  # rumored bug in getting the cpu count
+
+def _configure_app():
+    app.config['UPLOAD_FOLDER'] = '/tmp'
+    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+    app.config['matcher_dir'] = 'serverpkg/matchers'
+    app.config['runner_dir'] = 'serverpkg/runners'
+    app.config['assignment_config_file'] = 'hw_settings.json'
+
+    app.config['LDAP_HOST'] = 'ldap://ccldap.technion.ac.il'
+    app.config['LDAP_BASE_DN'] = 'ou=tx,dc=technion,dc=ac,dc=il'
+    # app.config['LDAP_USERNAME'] = 'cn=cnoam,ou=Users,dc=il'
+    # app.config['LDAP_PASSWORD'] = '--'
+    app.secret_key = b'3456o00sdf045'
 
 
 class SanityError(Exception):
@@ -27,6 +58,39 @@ def _running_on_dev_machine():
     import socket
     return socket.gethostname() == 'noam-cohen-u.iem.technion.ac.il'
 
+# ---------------------
+
+_configure_app()
+
+
+
+# ssl
+#LDAP_SCHEMA = environ.get('LDAP_SCHEMA', 'ldaps')
+app.config['LDAP_PORT'] =  DAP_PORT = os.environ.get('LDAP_PORT', 636)
+# openLDAP
+#app.config['LDAP_OPENLDAP'] = True
+# Users
+#app.config['LDAP_USER_OBJECT_FILTER'] = '(uid=%s)'
+# Groups
+#app.config['LDAP_GROUP_MEMBER_FILTER'] = '(|(&(objectClass=*)(member=%s)))'
+#app.config['LDAP_GROUP_MEMBER_FILTER_FIELD'] = 'cn'
+# Error Route
+# @app.route('/unauthorized') <- corresponds with the path of this route when authentication fails
+#app.config['LDAP_LOGIN_VIEW'] = 'unauthorized'
+#ldap = LDAP(app)
+
+#g.user = "nnn"
+# @app.route('/ldap')
+# #@ldap.login_required
+# def test_ldap():
+#     test = ldap.bind_user(app.config['LDAP_USERNAME'], app.config['LDAP_PASSWORD'])
+#     print(test)
+
+@app.errorhandler(401)
+@app.route('/unauthorized')
+def unauthorized_message(e):
+    return 'Unauthorized, username or password incorrect'
+# ---------------------------------
 @app.route('/',methods = ['GET'])
 def index():
     return render_template('index.html', running_locally = _running_on_dev_machine())
@@ -113,6 +177,7 @@ def _upload_file(course_num, ex_type, ex_number, compare_to_golden = False):
         else:
             flash("Please check the file type!")
     return render_template('upload_homework.html',
+                           file_types = str(ALLOWED_EXTENSIONS),
                            course_number=course_num, hw_number=ex_number,
                            num_jobs_running=_job_status_db.num_running_jobs())
 
@@ -194,7 +259,7 @@ def _get_config_for_ex(course_number, ex_type,ex_number):
     try:
         params = params[str(course_number)]
     except KeyError:
-        logger.warn("course number not found in config file")
+        logger.warning("course number not found in config file")
         raise KeyError("course number {} not found in the config file".format(course_number))
     for e in params:
         if e['id'] == ex_number:
@@ -283,7 +348,7 @@ def handle_file_blocking(package_under_test, reference_input, reference_output):
     return utils.wrap_html_source(message)
 
 
-#TODO: fix it - the file is not available during the test run in /tmp    course_id = _get_configured_course_ids()
+course_id = _get_configured_course_ids()
 # moved to run.py
 # if __name__ == '__main__':
 #     logger.warning("Starting the server as standalone")

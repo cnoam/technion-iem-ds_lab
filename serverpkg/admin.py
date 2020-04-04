@@ -1,15 +1,17 @@
+"""
+Admin pages are placed in this module.
+It is loaded from the server module.
+"""
 
-from flask import Flask, render_template, request, url_for, flash
+from flask import render_template, request, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required
-from werkzeug.utils import redirect, secure_filename
+from werkzeug.utils import redirect
 from flask_login import UserMixin
-from http import HTTPStatus
-from serverpkg import app, logger
+
+from . server import app, logger
 
 login_manager = LoginManager()
 login_manager.init_app(app)
-
-# already in __init__ app.config['SECRET_KEY'] = "k490sk6257s" # a random string that will be used to sign cookies by flask
 
 
 class User(UserMixin):
@@ -17,6 +19,7 @@ class User(UserMixin):
         self.username = 'admin'
         self.password = 'pass'
         self.id = "77"
+
 
 the_single_user = User()
 
@@ -58,6 +61,7 @@ def show_ex_config():
     with open(app.config['assignment_config_file'],'r') as fin:
         contents = fin.read()
     return render_template('dump_source_code.html', source = contents)
+
 
 def _upload_and_save():
     # check if the post request has the file part
