@@ -24,7 +24,16 @@ on the server that will run the checker:
 * clone the repo and cd into it
 * create required directories:
   ```mkdir -p $HOME/data/logs```
-* build the docker:
+  ## First time installation
+  Currently need to manually build the dependency images:
+  ```
+  docker build -t python_cmake_base -f Dockerfile_base .
+  docker build -t py_java_cpp_base -f Dockerfile_py_java_cpp_base .
+  ```
+  
+## 
+
+* build the docker container:
 ```docker build -t server . ```
 * run the server in a new container:
 ```./scripts/run_docker.sh server ```
