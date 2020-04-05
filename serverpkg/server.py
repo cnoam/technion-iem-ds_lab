@@ -30,8 +30,8 @@ MAX_CONCURRENT_JOBS = os.cpu_count()
 if MAX_CONCURRENT_JOBS is None:
     MAX_CONCURRENT_JOBS = 2  # rumored bug in getting the cpu count
 
+
 def _configure_app():
-    app.config['UPLOAD_FOLDER'] = '/tmp'
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
     app.config['matcher_dir'] = 'serverpkg/matchers'
     app.config['runner_dir'] = 'serverpkg/runners'
@@ -46,6 +46,12 @@ def _configure_app():
 
 class SanityError(Exception):
     pass
+
+
+class _HttpStatusError(Exception):
+    def __init__(self, reason_string, status_code):
+        self.text = reason_string
+        self.status_code = status_code
 
 
 def allowed_file(filename):
@@ -113,7 +119,13 @@ def show_jobs_():
 
 # noinspection PyPackageRequirements
 @app.route('/<int:course>/submit/<ex_type>/<int:number>', methods=['GET', 'POST'])
-def upload_file(course,ex_type, number):
+def handle_submission(course,ex_type, number):
+    if request.method == 'GET':
+        return render_template('upload_homework.html',
+                               file_types=str(ALLOWED_EXTENSIONS),
+                               course_number=course, hw_number=number,
+                               num_jobs_running=_job_status_db.num_running_jobs())
+
     if _job_status_db.num_running_jobs() >= MAX_CONCURRENT_JOBS:
         return "Busy! try again in a few seconds.", HTTPStatus.SERVICE_UNAVAILABLE
 
@@ -124,64 +136,65 @@ def upload_file(course,ex_type, number):
     except SanityError as ex:
         return "<H1>Message to Tutor</H1>There is something wrong in the config file for this exercise.<br>"\
                "Please fix and submit again. <br><strong>Error: " + str(ex) + '</strong>'
-    return _upload_file(course,ex_type, number)
+    # check if the post request has the file part
+    if 'file' not in request.files:
+        flash('No file part')
+        return redirect(request.url)
+    # if user does not select file, browser also
+    # submit an empty part without filename
+    file = request.files['file']
+    if file.filename == '':
+        flash('No selected file')
+        return redirect(request.url)
 
-
-def _upload_file(course_num, ex_type, ex_number, compare_to_golden = False):
-    """ upload homework 'number'
-        call a checker and return the result.
-        Block here until the checker completes.
-    """
-    if not ex_type in ('lab','hw'):
+    if ex_type not in ('lab', 'hw'):
         return "please use {lab|hw} in the URL", HTTPStatus.BAD_REQUEST
-    if request.method == 'POST':
-        # check if the post request has the file part
-        if 'file' not in request.files:
-            flash('No file part')
-            return redirect(request.url)
-        file = request.files['file']
-        # if user does not select file, browser also
-        # submit an empty part without filename
-        if file.filename == '':
-            flash('No selected file')
-            return redirect(request.url)
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            if filename != file.filename:
-                return "Please use a valid file name (without spaces) (e.g. ex560.tar.gz)",HTTPStatus.BAD_REQUEST
-            # BUG: two concurrent sessions with the same file name will overwrite each other
-            saved_file_name = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            try:
-                file.save(saved_file_name)
-            except:
-                logger.error("Failed saving file=" + saved_file_name)
-                raise
+    try:
+        uploaded_file_path = _upload_file()
+    except _HttpStatusError as e:
+        return e.text, e.status_code
 
-            try:
-                postfix = "GOLD" if compare_to_golden else ""
-                reference_output = "./data/{}/ref_{}_{}_output{}".format(course_num,ex_type,ex_number,postfix)
-                reference_input  = "./data/{}/ref_{}_{}_input{}".format(course_num,ex_type, ex_number, postfix)
-                logger.info(" ref files supplied to handler: " + reference_input + "   " + reference_output)
-                logger.info("TAR file: " + saved_file_name)
-                the_reply = handle_file(saved_file_name,course_num, ex_type, ex_number, reference_input, reference_output,
-                                       lambda :os.unlink(saved_file_name))
-                #   None)
-            finally:
-                pass
-                # the handle_file() is ASYNC, so at this stage we don't know yet when can the file be deleted.
-                # MUST do it in a completionCallback
-                #os.unlink(saved_file_name)
+    the_reply = "oops. uninitialized variable", 500
+    compare_to_golden = False
+    try:
+        postfix = "GOLD" if compare_to_golden else ""
+        reference_output = "./data/{}/ref_{}_{}_output{}".format(course,ex_type,number,postfix)
+        reference_input  = "./data/{}/ref_{}_{}_input{}".format(course,ex_type, number, postfix)
+        logger.info(" ref files supplied to handler: " + reference_input + "   " + reference_output)
+        logger.info("uploaded file: " + uploaded_file_path)
+        the_reply = handle_file(uploaded_file_path,course, ex_type, number, reference_input, reference_output,
+                               lambda :os.unlink(uploaded_file_path))
+    except FileNotFoundError as e:
+        logger.error("Internal error. This is probably a race condition: %s", e)
 
-            return the_reply
-            #return redirect(url_for('upload_file', filename=filename))
-        else:
-            flash("Please check the file type!")
-    return render_template('upload_homework.html',
-                           file_types = str(ALLOWED_EXTENSIONS),
-                           course_number=course_num, hw_number=ex_number,
-                           num_jobs_running=_job_status_db.num_running_jobs())
+    return the_reply
 
 
+def _upload_file():
+    """ upload homework 'number'
+    :return absolute file path of the loaded file or raise
+    :note Caller has to remove the temp dir created here
+    """
+    assert request.method == 'POST'
+    file = request.files['file']
+
+    if not(file and allowed_file(file.filename)):
+        raise _HttpStatusError("unexpected file type", 400)
+
+    filename = secure_filename(file.filename)
+    if filename != file.filename:
+        raise _HttpStatusError(
+            "Please use a valid file name (without spaces) (e.g. ex560.tar.gz)",HTTPStatus.BAD_REQUEST)
+    import tempfile
+    saved_file_name = os.path.join(tempfile.mkdtemp(), filename)
+    try:
+        file.save(saved_file_name)
+    except Exception as e:
+        logger.error("Failed saving file %s (%s)" , saved_file_name,e)
+        raise
+    return saved_file_name
+
+#TODO: this endpoint will require authentication
 @app.route('/<int:course>/submit/goldi/<ex_type>/<int:number>', methods=['GET', 'POST'])
 def upload_file_golden_ref(course,ex_type, number):
     return _upload_file(course,ex_type, number, compare_to_golden=True)
@@ -205,6 +218,8 @@ def show_leaderboard(course):
 
 
 def handle_file(package_under_test,course_number, ex_type, ex_number, reference_input, reference_output, completionCb):
+    """Send the file to execution. If async, return immediately"""
+
     use_async = True
     if use_async:
         return handle_file_async(package_under_test, course_number, ex_type, ex_number, reference_input, reference_output,completionCb)
@@ -349,8 +364,3 @@ def handle_file_blocking(package_under_test, reference_input, reference_output):
 
 
 course_id = _get_configured_course_ids()
-# moved to run.py
-# if __name__ == '__main__':
-#     logger.warning("Starting the server as standalone")
-#     app.run(host="0.0.0.0", port=8000)
-#

@@ -11,6 +11,7 @@ pushd /tmp
 rm -rf $TESTDIR
 mkdir $TESTDIR
 cd $TESTDIR
+echo PWD="`pwd`"
 
 #unshare -rn /usr/bin/time  -f "run time: %U user %S system" timeout $UUT_TIMEOUT java $1 $2 $3 $4
 # if there is an error, this line is NOT executed ( "-e" )
