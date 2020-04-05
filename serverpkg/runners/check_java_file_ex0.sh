@@ -19,9 +19,9 @@ cd $TESTDIR
 # extract the zip, cd to src, compile and run
 unzip $INPUT_SRC
 cd src
-javac SortingAlgorithm.java
+javac InsertionSort.java
 
-/usr/bin/time  -f "run time: %U user %S system"  timeout $UUT_TIMEOUT java SortingAlgorithm  5  4   -33 6 > output
+/usr/bin/time  -f "run time: %U user %S system"  timeout $UUT_TIMEOUT java InsertionSort  5  4   -33 6 > output
 echo --- finished the tested run.
 set +e
 
