@@ -102,7 +102,7 @@ def is_maintenance_mode():
 
 @app.before_request
 def check_for_maintenance():
-    rule = request.url_rule.rule
+    rule = request.url_rule.rule if request.url_rule else ''
     if is_maintenance_mode() and 'maintenance' not in rule:
         return render_template('offline_for_maintanance.html')
 
