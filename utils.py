@@ -7,3 +7,29 @@ def wrap_html_source(text):
         text = "ERROR: got None value!"
     return "<html><pre><code> " + text +  "</code></pre></html>"
 
+
+from functools import wraps
+from time import time
+import logging
+def measure(func):
+    @wraps(func)
+    def _time_it(*args, **kwargs):
+        start = int(round(time() * 1000))
+        try:
+            return func(*args, **kwargs)
+        finally:
+            end_ = int(round(time() * 1000)) - start
+            if end_ >= 300:
+                logging.fatal(f"Total execution time: {end_ if end_ > 0 else 0} ms")
+    return _time_it
+
+
+if __name__ == "__main__":
+
+    @measure
+    def hello():
+        from time import sleep
+        sleep(0.335)
+        print('hello world')
+
+    hello()
