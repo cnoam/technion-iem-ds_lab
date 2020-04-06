@@ -92,6 +92,20 @@ app.config['LDAP_PORT'] =  DAP_PORT = os.environ.get('LDAP_PORT', 636)
 #     test = ldap.bind_user(app.config['LDAP_USERNAME'], app.config['LDAP_PASSWORD'])
 #     print(test)
 
+
+def is_maintenance_mode():
+    """return True if the server is in maint mode
+    """
+    by_env = os.getenv('MAINTENANCE_MODE') is not None
+    by_file = os.path.exists('/data/maintenance')
+    return by_env or by_file
+
+@app.before_request
+def check_for_maintenance():
+    rule = request.url_rule.rule
+    if is_maintenance_mode() and 'maintenance' not in rule:
+        return render_template('offline_for_maintanance.html')
+
 @app.errorhandler(401)
 @app.route('/unauthorized')
 def unauthorized_message(e):
