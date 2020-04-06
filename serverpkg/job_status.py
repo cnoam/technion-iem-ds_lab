@@ -110,18 +110,22 @@ class JobStatusDB():
         """
         assert isinstance(ex_type_name, tuple)
         jobid = random.randint(1,10000)
-        j = JobStatus(jobid, ex_type_name[1], package_file_name)
+        with self.lock:
+            j = JobStatus(jobid, ex_type_name[1], package_file_name)
         self.jobs[jobid] = j
         return j
 
     def get_job_stat(self, job_id):
-        return (self.jobs[job_id]).as_html()
+        with self.lock:
+            stat =  (self.jobs[job_id]).as_html()
+        return stat
 
     def num_running_jobs(self):
         count = 0
-        for jobid, jobstat in self.jobs.items():
-            if jobstat.status == 'running':
-                count += 1
+        with self.lock:  #   RuntimeError: dictionary changed size during iteration
+            for jobid, jobstat in self.jobs.items():
+                if jobstat.status == 'running':
+                    count += 1
         return count
 
     def job_completed(self, job,  exit_code, run_time,stdout, stderr):
