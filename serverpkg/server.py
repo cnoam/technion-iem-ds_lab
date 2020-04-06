@@ -97,7 +97,7 @@ def is_maintenance_mode():
     """return True if the server is in maint mode
     """
     by_env = os.getenv('MAINTENANCE_MODE') is not None
-    by_file = os.path.exists('/data/maintenance')
+    by_file = os.path.exists('./data/maintenance')
     return by_env or by_file
 
 @app.before_request
