@@ -177,7 +177,8 @@ def handle_submission(course,ex_type, number):
         logger.info(" ref files supplied to handler: " + reference_input + "   " + reference_output)
         logger.info("uploaded file: " + uploaded_file_path)
         the_reply = handle_file(uploaded_file_path,course, ex_type, number, reference_input, reference_output,
-                               lambda :os.unlink(uploaded_file_path))
+         #                      lambda :os.unlink(uploaded_file_path))
+        None)
     except FileNotFoundError as e:
         logger.error("Internal error. This is probably a race condition: %s", e)
 

@@ -11,13 +11,17 @@ import sys
 
 
 def check(file1, file2):
+    """Compare file1 and file2.
+    Ignore leading and trailing whitespaces of the file"""
+
     with open(file1,'r') as f1:
         test_output = f1.read()
     with open(file2) as f2:
         ref_output = f2.read()
     #p = subprocess.run(['diff', file1,file2], stdout=subprocess.PIPE)
     #print(p.stdout)
-    return  test_output == ref_output
+    return  test_output.strip() == ref_output.strip()
+    #return  test_output == ref_output
 
 
 if __name__ == "__main__":
