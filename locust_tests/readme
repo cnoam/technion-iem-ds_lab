@@ -1,0 +1,8 @@
+
+To run a simple test session without UI:
+pip3 install locust
+
+cd locust_tests
+locust -c 1 --no-web
+
+press CTRL C to stop the sending
