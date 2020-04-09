@@ -4,6 +4,7 @@
 # also, try minimizing the sharing of global state
 from .server_codes import ExitCode
 
+
 def show_jobs(job_status_db):
     """
     create a nice table with all the jobs past and present.
@@ -11,8 +12,8 @@ def show_jobs(job_status_db):
     :return: html page
     """
     from .leaderboard import html_pre
-    if job_status_db.lock.locked():
-        return "Table is currently locked. Try again soon"
+    # if job_status_db.lock.locked():
+    #     return "Table is currently locked. Try again soon"
     s = html_pre + "<h1>Job table</h1> <br>" \
                    "<h3>You can sort by any column by clicking the header</h3><br>"
     s += """<table class="sortable">
@@ -26,7 +27,8 @@ def show_jobs(job_status_db):
             </tr>"""
 
     # sort the rows by descending date
-    items = sorted(list(job_status_db.jobs.values()) ,key=lambda x: -x.start_time.timestamp())
+    items = sorted(list(job_status_db.jobs().values()) ,key=lambda x: -x.start_time.timestamp())
+
     for j in items:
         when = j.start_time.ctime() if j.start_time is not None else "?"
         run_time = '{:.5}'.format(j.run_time) if j.run_time is not None else "N/A"
@@ -38,6 +40,6 @@ def show_jobs(job_status_db):
 
         link_to_job = '<a href=check_job_status/%d' % j.job_id + '>%d'% j.job_id + '</a>'
         s += "<tr> <td>{}</td> <td>{}</td> <td>{}</td> <td>{}</td> <td>{}</td> <td>{}</td></tr>".\
-            format(when,j.filename, link_to_job, run_time,j.status,exit_code)
+            format(when,j.filename, link_to_job, run_time,j.status.name,exit_code)
     s += "</table>"
     return s

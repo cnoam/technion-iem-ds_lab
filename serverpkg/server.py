@@ -1,12 +1,14 @@
 # written and tested on linux only
 # It will not work on Windows
-import sys, os
+import os
+import sys
+
 if sys.version_info.major != 3:
     raise Exception("must use python 3")
 
 from .logger_init import init_logger
 from http import HTTPStatus
-from flask import Flask, flash, request, redirect, url_for,render_template
+from flask import Flask, flash, request, redirect, render_template
 from werkzeug.utils import secure_filename
 import subprocess
 from .asyncChecker import AsyncChecker
@@ -20,10 +22,10 @@ app = Flask(__name__, template_folder='./templates')
 
 logger = init_logger('server')
 
-
-from . import admin
+# The following import is needed to prepare the admin endpoints
 
 _job_status_db = job_status.JobStatusDB()
+_job_status_db._create_tables()
 
 ALLOWED_EXTENSIONS = {'zip','gz','xz','py','sh','patch','java'} # TODO: replace with per exercise list
 MAX_CONCURRENT_JOBS = os.cpu_count()

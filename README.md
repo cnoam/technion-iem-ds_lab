@@ -166,9 +166,10 @@ During development, it is easier to run only the python code without Docker:
  python3 run.py
   ```
   
+  ## gunicorn
   To run with gunicorn (one step closer to the realworld configuration):
   ```
   cd ~/checker
   source venv/bin/activate
-  gunicorn server:app
+  gunicorn3 -b 0.0.0.0:8000 --workers 3 serverpkg.server:app
 ```

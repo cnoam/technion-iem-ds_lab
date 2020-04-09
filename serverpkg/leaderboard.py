@@ -35,7 +35,7 @@ class Leaderboard():
         """
         :return: list of the lowest run time jobs, one for each job_name
         """
-        jobs = self.jobsDb.jobs.values()
+        jobs = self.jobsDb.jobs().values()
         completed = list(filter(lambda job: job.status == 'completed', jobs))
 
         # leave only jobs that do not have attribute 'exercise_number' or having it and value is ex_name
@@ -78,7 +78,7 @@ class Leaderboard():
         <th>Duration [sec]</th>
         </tr>"""
         s += "<br><br><h3> these are marked as wrong answer, but might still be good<h3>"
-        completed = list(filter(lambda  job: job.exit_code == ExitCode.COMPARE_FAILED, self.jobsDb.jobs.values()))
+        completed = list(filter(lambda  job: job.exit_code == ExitCode.COMPARE_FAILED, self.jobsDb.jobs().values()))
         for j in completed:
             when = j.start_time.ctime() if j.start_time is not None else "?"
             runtime = j.run_time if j.run_time is not None else 0.0

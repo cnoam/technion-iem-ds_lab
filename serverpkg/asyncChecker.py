@@ -1,9 +1,12 @@
-import threading
-import subprocess
 import re
-from .server_codes import ExitCode
+import subprocess
+import threading
+
 from .logger_init import init_logger
+from .server_codes import ExitCode
+
 logger = init_logger('asyncChecker')
+
 
 def _extract_run_time(string):
     """
@@ -21,8 +24,9 @@ def _extract_run_time(string):
 class AsyncChecker(threading.Thread):
 
     def __init__(self, job_db,  new_job, package_under_test, reference_input, reference_output, completion_cb, timeout_sec = 300):
+        assert new_job.job_id is not None
         super().__init__(name = "job "+ str(new_job.job_id))
-        self.job_status = new_job
+        self.job = new_job
         self.package_under_test = package_under_test
         self.reference_input = reference_input
         self.reference_output = reference_output
@@ -32,8 +36,12 @@ class AsyncChecker(threading.Thread):
 
     def run(self):
         import datetime
-        self.job_status.status='running' # todo use enums!
-        self.job_status.start_time = datetime.datetime.today()
+
+        # Because the true state is stored in a database, the reference to Job can only
+        # be used for reading. Updating it will not update the db table.
+        #self.job.status= Job.Status.running
+        #self.job.start_time = datetime.datetime.today()
+        self.job_db.mark_job_running(self.job.job_id, start_time=datetime.datetime.today())
         completed_proc = None
 
         exit_code = None
@@ -42,9 +50,9 @@ class AsyncChecker(threading.Thread):
             import  os
             logger.info("ref files:  " + self.reference_input + "," + self.reference_output)
             #  https://medium.com/@mccode/understanding-how-uid-and-gid-work-in-docker-containers-c37a01d01cf
-            comparator = self.job_status.comparator_file_name
+            comparator = self.job.comparator_file_name
             assert (comparator is not None)
-            executor = self.job_status.executor_file_name
+            executor = self.job.executor_file_name
             assert (executor is not None)
             prog_run_time = None
             logger.debug("executor={}, UUT={}, comparator={}".format( executor,self.package_under_test, comparator))
@@ -60,7 +68,7 @@ class AsyncChecker(threading.Thread):
                                              self.reference_output, comparator],
                                             check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                             timeout= self.timeout_sec)
-            logger.info("job {} completed with exit code {}".format(self.job_status.job_id, completed_proc.returncode))
+            logger.info("job {} completed with exit code {}".format(self.job.job_id, completed_proc.returncode))
             if completed_proc.returncode != 0:
                 logger.info("STDERR:\n" + completed_proc.stderr.decode('utf-8'))
 
@@ -85,12 +93,13 @@ class AsyncChecker(threading.Thread):
         finally:
             out = completed_proc.stdout.decode('utf-8') if completed_proc is not None else None
             err = completed_proc.stderr.decode('utf-8') if completed_proc is not None else None
-            self.job_db.job_completed(self.job_status,
-                                      exit_code= exit_code,
-                                      run_time=run_time,
-                                      stdout=out,
-                                      stderr=err
-                                      )
+            self.job_db.mark_job_completed(self.job.job_id,
+                                           #status = self.job.status,
+                                           exit_code= exit_code,
+                                           run_time=run_time,
+                                           stdout=out,
+                                           stderr=err
+                                           )
 
             if self.completion_cb is not None:
                 self.completion_cb()
@@ -100,7 +109,8 @@ class AsyncChecker(threading.Thread):
 if __name__ == "__main__":
 
     # check that the timeout is applied to the process spawned by the shell which is spawned by the python process.
-    from .job_status import JobStatus, JobStatusDB
+    from .job_status import JobStatusDB
+
     db = JobStatusDB()
     uut = './loop'
     job = db.add_job(('hw',4),uut)
