@@ -37,6 +37,13 @@
           "runner": "check_java_file_ex0.sh",
           "timeout": 10,
           "allowed_extension": ["java"]
+     },
+            {
+          "id": 1,
+          "matcher": "exact_match.py",
+          "runner": "check_java_file_ex1.sh",
+          "timeout": 20,
+          "allowed_extension": ["java"]
      }
      ]
 }
