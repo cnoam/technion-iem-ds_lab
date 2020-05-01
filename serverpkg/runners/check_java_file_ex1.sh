@@ -1,7 +1,7 @@
 #!/bin/bash -ex
 # custom made for semester: 2020Spring, course:094219, ex:1
 # $2 contains the full path to the data dir
-data_path=$HOME/data/data
+data_path="/app/data/data"   # the data dir is mapped to this location.
 echo Running "$1" $data_path
 echo Timeout set to $UUT_TIMEOUT
 
@@ -26,12 +26,12 @@ cd src
 # part1
 fname=part1/BirthStatistics.java
 javac $fname
-/usr/bin/time  -f "run time: %U user %S system"  timeout $UUT_TIMEOUT java $fname $data_path > output
+/usr/bin/time  -f "run time: %U user %S system"  timeout $UUT_TIMEOUT java part1/BirthStatistics $data_path > output
 
 # part2
 fname=part2/Library.java
-javac $fname part2/Book.java
-timeout $UUT_TIMEOUT java $fname $2 >> output
+javac $fname
+timeout $UUT_TIMEOUT java part2/Library $2 >> output
 
 #
 echo --- finished the tested run.

@@ -14,7 +14,7 @@ def check(file1, file2):
     """Compare file1 and file2.
     Ignore leading and trailing whitespaces of the file"""
 
-    with open(file1,'r') as f1:
+    with open(file1) as f1:
         test_output = f1.read()
     with open(file2) as f2:
         ref_output = f2.read()
