@@ -91,8 +91,17 @@ class AsyncChecker(threading.Thread):
             exit_code= ExitCode.PROCESS_ERROR
             run_time=None
         finally:
-            out = completed_proc.stdout.decode('utf-8') if completed_proc is not None else None
-            err = completed_proc.stderr.decode('utf-8') if completed_proc is not None else None
+            try:
+                out = completed_proc.stdout.decode('utf-8') if completed_proc is not None else None
+            except UnicodeDecodeError as ex:
+                logger.warning("cannot decode stdout." + str(ex))
+                out = "There was a problem decoding the output of the program. Make sure there are no special characters at the output"
+            try:
+                err = completed_proc.stderr.decode('utf-8') if completed_proc is not None else None
+            except UnicodeDecodeError as ex:
+                logger.warning("cannot decode stderr." + str(ex))
+                err = "There was a problem decoding the output of the program. Make sure there are no special characters at the output"
+
             self.job_db.mark_job_completed(self.job.job_id,
                                            #status = self.job.status,
                                            exit_code= exit_code,
