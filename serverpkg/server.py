@@ -27,6 +27,10 @@ logger = init_logger('server')
 _job_status_db = job_status.JobStatusDB()
 _job_status_db._create_tables()
 
+# regretably, the admin module uses _job_status_db so it can be imported only here
+from . import admin
+
+
 ALLOWED_EXTENSIONS = {'zip','gz','xz','py','sh','patch','java'} # TODO: replace with per exercise list
 MAX_CONCURRENT_JOBS = os.cpu_count()
 if MAX_CONCURRENT_JOBS is None:
@@ -380,4 +384,12 @@ def handle_file_blocking(package_under_test, reference_input, reference_output):
     return utils.wrap_html_source(message)
 
 
+def _purge_db_running_jobs():
+    """due to bugs/crashes the db table may contain jobs with status 'running'
+    This will cause the server to refuse more jobs (since it believes it is full).
+    When starting the server we know for sure there are now running jobs, so purge them"""
+    from .job_status import Job
+    _job_status_db.delete_jobs(Job.Status.running)
+
 course_id = _get_configured_course_ids()
+_purge_db_running_jobs()

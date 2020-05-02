@@ -231,6 +231,18 @@ class JobStatusDB():
             rows = conn.execute("SELECT COUNT(*) FROM jobs WHERE status=?;", ( Job.Status.running.name,)).fetchone()
         return rows[0]
 
+    def delete_jobs(self, job_status):
+        """
+        delete from the DB records matching the job status.
+        :param job_status:
+        :return: how many records were deleted
+        """
+        with sqlite3.connect(self.db_file_name) as conn:
+            rows = conn.execute("DELETE FROM jobs WHERE status=?;", (job_status.name,)).fetchall()
+            if len(rows) > 0:
+                logger.info("deleted %d rows with status %s" % (len(rows), job_status.name ))
+        return len(rows)
+
     # def set_job_status(self, job_id:int, new_status:Job.Status):
     #     """udpate the relevant entry in the DB.
     #     WARNING: python objects of Job are NOT updated. only the DB"""

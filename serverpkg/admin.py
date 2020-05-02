@@ -2,6 +2,7 @@
 Admin pages are placed in this module.
 It is loaded from the server module.
 """
+from http import HTTPStatus
 
 from flask import render_template, request, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required
@@ -81,4 +82,15 @@ def _upload_and_save():
         except OSError as ex:
             logger.error("Failed saving file=" + file_name, ex)
             raise
+
+
+@app.route("/purge", methods=['GET'])
+@login_required
+def purge_completed_jobs():
+    """ test the db deletion of matching rows"""
+    from .server import _job_status_db
+    from .job_status import Job
+    _job_status_db.delete_jobs(Job.Status.completed)
+    flash('deleted completed jobs (if any)')
+    return '', HTTPStatus.OK
 
