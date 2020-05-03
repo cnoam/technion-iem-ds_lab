@@ -384,12 +384,15 @@ def handle_file_blocking(package_under_test, reference_input, reference_output):
     return utils.wrap_html_source(message)
 
 
-def _purge_db_running_jobs():
+def _purge_db_stale_jobs():
     """due to bugs/crashes the db table may contain jobs with status 'running'
     This will cause the server to refuse more jobs (since it believes it is full).
     When starting the server we know for sure there are now running jobs, so purge them"""
     from .job_status import Job
     _job_status_db.delete_jobs(Job.Status.running)
+    _job_status_db.delete_jobs(Job.Status.pending)
+
+
 
 course_id = _get_configured_course_ids()
-_purge_db_running_jobs()
+_purge_db_stale_jobs()
