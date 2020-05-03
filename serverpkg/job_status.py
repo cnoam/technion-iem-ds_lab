@@ -45,7 +45,11 @@ class Job():
 
         # convert to status:Job.Status
         j.status = Job.Status[j.status]
-        j.start_time = datetime.datetime.strptime(j.start_time,"%Y-%m-%d %H:%M:%S.%f")
+        if j.start_time is None:
+            logger.warning("partial job record: " + str(j))
+            j.start_time = 'n/a'
+        else:
+            j.start_time = datetime.datetime.strptime(j.start_time,"%Y-%m-%d %H:%M:%S.%f")
         return j
 
     @staticmethod
