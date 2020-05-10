@@ -3,7 +3,6 @@ Admin pages are placed in this module.
 It is loaded from the server module.
 """
 from http import HTTPStatus
-
 from flask import render_template, request, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required
 from werkzeug.utils import redirect
@@ -94,3 +93,22 @@ def purge_completed_jobs():
     flash('deleted completed jobs (if any)')
     return '', HTTPStatus.OK
 
+
+@app.route("/jobs_as_csv", methods=['GET'])
+@login_required
+def get_job_results():
+    import re
+    from .server import _job_status_db
+    csv_output = "ID , status\n"
+    for j in _job_status_db.jobs().values():
+        matches = re.findall(r"(\d{8,9})_(\d{8,9})", j.filename)
+        if len(matches)==0 :
+            csv_output += "???, %s\n" % j.status.name
+        else:
+            (id1, id2) = matches[0]
+            csv_output += "%s, %s\n%s, %s\n" % (id1,j.status.name, id2, j.status.name )
+
+    from flask import make_response
+    resp = make_response(csv_output)
+    resp.headers['Content-Type'] = 'text/plain'
+    return resp

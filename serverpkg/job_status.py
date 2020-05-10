@@ -88,7 +88,7 @@ class Job():
         self.executor_file_name = None
         self.exercise_name = str(exercise_name) # used to identify for which exercise/lab number this job is related.
 
-        matches = re.findall(r"(\d+)_(\d+).", filename)
+        matches = re.findall(r"(\d{8,9})_(\d{8,9})", filename)
         if len(matches)==0 :
             self.filename = filename
         else:
