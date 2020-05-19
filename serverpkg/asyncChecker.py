@@ -16,9 +16,16 @@ def _extract_run_time(string):
     :raises ValueError
     """
     matches = re.findall("run time: ([0-9.]+) user ([0-9.]+) system", string)
-    if len(matches) != 1:
+    if len(matches) == 0:
         raise ValueError("run times not found in \n" + string)
-    return sum(map(float, matches[0]))
+    # it is possible that more than one run was done, so accumulate the values
+    # example: [('0.60', '0.10'), ('0.39', '0.02')]
+    times = [0,0]
+    for m in matches:
+        times[0] += float(m[0])
+        times[1] += float(m[1])
+
+    return times[0] + times[1]
 
 
 class AsyncChecker(threading.Thread):
