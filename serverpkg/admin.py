@@ -94,6 +94,16 @@ def purge_completed_jobs():
     return '', HTTPStatus.OK
 
 
+@app.route("/purge/failed", methods=['GET'])
+@login_required
+def purge_failed_jobs():
+    """ test the db deletion of matching rows"""
+    from .server import _job_status_db
+    from .job_status import Job
+    _job_status_db.delete_jobs(Job.Status.failed)
+    flash('deleted failed jobs (if any)')
+    return '', HTTPStatus.OK
+
 @app.route("/jobs_as_csv", methods=['GET'])
 @login_required
 def get_job_results():
@@ -103,7 +113,7 @@ def get_job_results():
     for j in _job_status_db.jobs().values():
         matches = re.findall(r"(\d{8,9})_(\d{8,9})", j.filename)
         if len(matches)==0 :
-            csv_output += "???, %s\n" % j.status.name
+            csv_output += "0, %s\n" % j.status.name
         else:
             (id1, id2) = matches[0]
             csv_output += "%s, %s\n%s, %s\n" % (id1,j.status.name, id2, j.status.name )
