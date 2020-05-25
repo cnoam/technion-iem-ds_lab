@@ -24,7 +24,7 @@
      "94210": [
           {
                "id": 1,
-               "matcher": "exact_match.py",
+               "matcher": "ignore_whitespace_match.py",
                "runner": "check_git_patch.sh",
                "timeout": 30,
                "allowed_extension": ["patch"]

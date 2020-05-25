@@ -1,0 +1,84 @@
+diff --git a/Makefile b/Makefile
+index 35a06d8..c029a7d 100644
+--- a/Makefile
++++ b/Makefile
+@@ -181,8 +181,7 @@ UPROGS=\
+ 	_usertests\
+ 	_wc\
+ 	_lsof\
+-	_zombie\
+-	_shutdown
++	_zombie
+ 
+ fs.img: mkfs README $(UPROGS)
+ 	./mkfs fs.img README $(UPROGS)
+@@ -219,7 +218,7 @@ QEMUGDB = $(shell if $(QEMU) -help | grep -q '^-gdb'; \
+ 	then echo "-gdb tcp::$(GDBPORT)"; \
+ 	else echo "-s -p $(GDBPORT)"; fi)
+ ifndef CPUS
+-CPUS := 2
++CPUS := 1
+ endif
+ QEMUOPTS = -drive file=fs.img,index=1,media=disk,format=raw -drive file=xv6.img,index=0,media=disk,format=raw -smp $(CPUS) -m 512 $(QEMUEXTRA)
+ 
+diff --git a/init.c b/init.c
+index 046b551..473968b 100644
+--- a/init.c
++++ b/init.c
+@@ -4,8 +4,14 @@
+ #include "stat.h"
+ #include "user.h"
+ #include "fcntl.h"
++#define SINGLESHOT
+ 
+-char *argv[] = { "sh", 0 };
++#ifdef SINGLESHOT
++static char shell_command[] = "ls |lsof" ; // sed -i 's/SHELL_CMD/cat \|lsof/' init_mod.c
++char *argv[] = { "sh", shell_command, 0 };
++#else
++char *argv[] = { "sh",0 };
++#endif
+ 
+ int
+ main(void)
+diff --git a/proc.c b/proc.c
+index 4758362..ce2880d 100644
+--- a/proc.c
++++ b/proc.c
+@@ -548,7 +548,7 @@ int lsof(void)
+         for(int i = 0; i < NOFILE; i++){
+           struct file* f = p->ofile[i];
+           if(f && f->type != FD_NONE ){
+-            cprintf("%d \t %d \t %s\t %s%s \n",
++            cprintf("%d \t %d \t %s \t %s%s \n",
+             p->pid, i, f->type == FD_PIPE? "pipe": "regular",
+             f->readable?"R":" ",
+             f->writable?"W":" ");
+diff --git a/sh.c b/sh.c
+index 054bab9..9cd6f57 100644
+--- a/sh.c
++++ b/sh.c
+@@ -142,7 +142,7 @@ getcmd(char *buf, int nbuf)
+ }
+ 
+ int
+-main(void)
++main(int ac, char* argv[])
+ {
+   static char buf[100];
+   int fd;
+@@ -155,6 +155,14 @@ main(void)
+     }
+   }
+ 
++  if(ac > 1){
++      // treat all the args as commands for the shell
++      if(fork1() == 0)
++          runcmd(parsecmd(argv[1]));
++      wait();
++      halt();
++  }
++
+   // Read and run input commands.
+   while(getcmd(buf, sizeof(buf)) >= 0){
+     if(buf[0] == 'c' && buf[1] == 'd' && buf[2] == ' '){

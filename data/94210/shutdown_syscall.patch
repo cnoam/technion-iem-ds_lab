@@ -1,0 +1,81 @@
+diff --git a/Makefile b/Makefile
+index 9192b12..35a06d8 100644
+--- a/Makefile
++++ b/Makefile
+@@ -182,6 +182,7 @@ UPROGS=\
+ 	_wc\
+ 	_lsof\
+ 	_zombie\
++	_shutdown
+ 
+ fs.img: mkfs README $(UPROGS)
+ 	./mkfs fs.img README $(UPROGS)
+diff --git a/syscall.c b/syscall.c
+index bfd6534..5c4ede0 100644
+--- a/syscall.c
++++ b/syscall.c
+@@ -104,7 +104,7 @@ extern int sys_wait(void);
+ extern int sys_write(void);
+ extern int sys_uptime(void);
+ extern int sys_lsof(void);
+-
++extern int sys_halt(void);
+ static int (*syscalls[])(void) = {
+ [SYS_fork]    sys_fork,
+ [SYS_exit]    sys_exit,
+@@ -128,6 +128,7 @@ static int (*syscalls[])(void) = {
+ [SYS_mkdir]   sys_mkdir,
+ [SYS_close]   sys_close,
+ [SYS_lsof]     sys_lsof,
++[SYS_halt]    sys_halt
+ };
+ 
+ void
+diff --git a/syscall.h b/syscall.h
+index 32de84f..b0b2679 100644
+--- a/syscall.h
++++ b/syscall.h
+@@ -21,3 +21,4 @@
+ #define SYS_mkdir  20
+ #define SYS_close  21
+ #define SYS_lsof   22
++#define SYS_halt   50
+diff --git a/sysproc.c b/sysproc.c
+index 7b0f75e..9ca5c9a 100644
+--- a/sysproc.c
++++ b/sysproc.c
+@@ -94,3 +94,13 @@ int
+ sys_lsof(void){
+     return lsof();
+ }
++
++
++int
++sys_halt(void)
++{
++  outw(0x604, 0x2000);
++  return 0;
++}
++
++
+diff --git a/user.h b/user.h
+index e48c576..af66777 100644
+--- a/user.h
++++ b/user.h
+@@ -24,6 +24,7 @@ char* sbrk(int);
+ int sleep(int);
+ int uptime(void);
+ int lsof(void);
++int halt(void);
+ 
+ // ulib.c
+ int stat(const char*, struct stat*);
+diff --git a/usys.S b/usys.S
+index 1ad3fcb..66a0e73 100644
+--- a/usys.S
++++ b/usys.S
+@@ -30,3 +30,4 @@ SYSCALL(sbrk)
+ SYSCALL(sleep)
+ SYSCALL(uptime)
+ SYSCALL(lsof)
++SYSCALL(halt)

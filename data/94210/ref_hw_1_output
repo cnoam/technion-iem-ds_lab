@@ -1,0 +1,21 @@
+qemu-system-i386 -nographic -drive file=fs.img,index=1,media=disk,format=raw -drive file=xv6.img,index=0,media=disk,format=raw -smp 1 -m 512
+xv6...
+cpu0: starting 0
+sb: size 1000 nblocks 941 ninodes 200 nlog 30 logstart 2 inodestart 32 bmap start 58
+init: starting sh
+PID 	 fd 	 type 	 read/write
+1 	 0 	 regular 	 RW
+1 	 1 	 regular 	 RW
+1 	 2 	 regular 	 RW
+2 	 0 	 regular 	 RW
+2 	 1 	 regular 	 RW
+2 	 2 	 regular 	 RW
+3 	 0 	 regular 	 RW
+3 	 1 	 regular 	 RW
+3 	 2 	 regular 	 RW
+4 	 0 	 regular 	 RW
+4 	 1 	 pipe 	  W
+4 	 2 	 regular 	 RW
+5 	 0 	 pipe 	 R
+5 	 1 	 regular 	 RW
+5 	 2 	 regular 	 RW
