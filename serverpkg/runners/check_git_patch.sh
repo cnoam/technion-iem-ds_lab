@@ -13,7 +13,7 @@ GOLDEN=`realpath $3`
 COMPARATOR=`realpath $4`
 
 TESTDIR=`mktemp -d`
-MASTER_SRC_DIR=/data/xv6-public
+MASTER_SRC_DIR=/data/xv6/xv6-public
 PATCH_DIR=/data/patches
 pushd $TESTDIR
 cp -r $MASTER_SRC_DIR .

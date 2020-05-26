@@ -4,7 +4,8 @@ FROM  python:3.6-stretch
 MAINTAINER Noam Cohen "cnoam@technion.ac.il"
 RUN apt update -y && \
  apt install -y build-essential && \
- apt install -y cmake g++
+ apt install -y cmake g++ && \
+ apt install -y qemu
 
 # add /usr/bin/time since the bash version is not good for my needs
 # for some obscure reason, Docker does not copy from the absolute path
