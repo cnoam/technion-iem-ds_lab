@@ -1,84 +1,126 @@
 diff --git a/Makefile b/Makefile
-index 35a06d8..c029a7d 100644
+index c029a7d..5d96fe7 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -181,8 +181,7 @@ UPROGS=\
+@@ -181,7 +181,8 @@ UPROGS=\
  	_usertests\
  	_wc\
  	_lsof\
--	_zombie\
--	_shutdown
-+	_zombie
+-	_zombie
++	_zombie\
++	_open_files
  
  fs.img: mkfs README $(UPROGS)
  	./mkfs fs.img README $(UPROGS)
-@@ -219,7 +218,7 @@ QEMUGDB = $(shell if $(QEMU) -help | grep -q '^-gdb'; \
- 	then echo "-gdb tcp::$(GDBPORT)"; \
- 	else echo "-s -p $(GDBPORT)"; fi)
- ifndef CPUS
--CPUS := 2
-+CPUS := 1
- endif
- QEMUOPTS = -drive file=fs.img,index=1,media=disk,format=raw -drive file=xv6.img,index=0,media=disk,format=raw -smp $(CPUS) -m 512 $(QEMUEXTRA)
+@@ -250,7 +251,7 @@ qemu-nox-gdb: fs.img xv6.img .gdbinit
  
+ EXTRA=\
+ 	mkfs.c ulib.c user.h cat.c echo.c forktest.c grep.c kill.c\
+-	ln.c ls.c mkdir.c rm.c stressfs.c usertests.c wc.c lsof.c zombie.c\
++	ln.c ls.c mkdir.c rm.c stressfs.c usertests.c wc.c lsof.c zombie.c open_files.c \
+ 	printf.c umalloc.c\
+ 	README dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
+ 	.gdbinit.tmpl gdbutil\
 diff --git a/init.c b/init.c
-index 046b551..473968b 100644
+index 473968b..7fc5036 100644
 --- a/init.c
 +++ b/init.c
-@@ -4,8 +4,14 @@
- #include "stat.h"
- #include "user.h"
+@@ -6,12 +6,13 @@
  #include "fcntl.h"
-+#define SINGLESHOT
+ #define SINGLESHOT
  
--char *argv[] = { "sh", 0 };
-+#ifdef SINGLESHOT
-+static char shell_command[] = "ls |lsof" ; // sed -i 's/SHELL_CMD/cat \|lsof/' init_mod.c
-+char *argv[] = { "sh", shell_command, 0 };
-+#else
-+char *argv[] = { "sh",0 };
-+#endif
+-#ifdef SINGLESHOT
+-static char shell_command[] = "ls |lsof" ; // sed -i 's/SHELL_CMD/cat \|lsof/' init_mod.c
+-char *argv[] = { "sh", shell_command, 0 };
+-#else
++//#ifdef SINGLESHOT
++
++//static char shell_command[] = "open_some_files |lsof" ; // sed -i 's/SHELL_CMD/cat \|lsof/' init_mod.c
++//char *argv[] = { "sh", shell_command, 0 };
++//#else
+ char *argv[] = { "sh",0 };
+-#endif
++//#endif
  
  int
  main(void)
-diff --git a/proc.c b/proc.c
-index 4758362..ce2880d 100644
---- a/proc.c
-+++ b/proc.c
-@@ -548,7 +548,7 @@ int lsof(void)
-         for(int i = 0; i < NOFILE; i++){
-           struct file* f = p->ofile[i];
-           if(f && f->type != FD_NONE ){
--            cprintf("%d \t %d \t %s\t %s%s \n",
-+            cprintf("%d \t %d \t %s \t %s%s \n",
-             p->pid, i, f->type == FD_PIPE? "pipe": "regular",
-             f->readable?"R":" ",
-             f->writable?"W":" ");
-diff --git a/sh.c b/sh.c
-index 054bab9..9cd6f57 100644
---- a/sh.c
-+++ b/sh.c
-@@ -142,7 +142,7 @@ getcmd(char *buf, int nbuf)
- }
+@@ -25,6 +26,38 @@ main(void)
+   dup(0);  // stdout
+   dup(0);  // stderr
  
- int
--main(void)
-+main(int ac, char* argv[])
- {
-   static char buf[100];
-   int fd;
-@@ -155,6 +155,14 @@ main(void)
-     }
-   }
- 
-+  if(ac > 1){
-+      // treat all the args as commands for the shell
-+      if(fork1() == 0)
-+          runcmd(parsecmd(argv[1]));
-+      wait();
-+      halt();
-+  }
++#ifdef SINGLESHOT
 +
-   // Read and run input commands.
-   while(getcmd(buf, sizeof(buf)) >= 0){
-     if(buf[0] == 'c' && buf[1] == 'd' && buf[2] == ' '){
++    // exec the tester and don't wait for it
++    pid = fork();
++    if(pid < 0){
++        printf(1, "init: fork failed\n");
++        exit();
++    }
++    if(pid == 0){
++        exec("open_files", argv);
++        printf(1, "init: exec sh failed\n");
++        exit();
++    }
++
++    sleep(100);
++    // exec the lsof
++    pid = fork();
++    if(pid < 0){
++        printf(1, "init: fork failed\n");
++        exit();
++    }
++    if(pid == 0){
++        exec("lsof", argv);
++        printf(1, "init: exec sh failed\n");
++        exit();
++    }
++    wait();
++    wait();
++    halt();
++#endif
++
++
+   for(;;){
+     printf(1, "init: starting sh\n");
+     pid = fork();
+diff --git a/open_files.c b/open_files.c
+new file mode 100644
+index 0000000..16c1e3e
+--- /dev/null
++++ b/open_files.c
+@@ -0,0 +1,34 @@
++#include "types.h"
++#include "user.h"
++
++#include "types.h"
++#include "stat.h"
++#include "fcntl.h"
++
++int main(int ac, char** av){
++    int num_ticks = 200;
++    char name[] = "dummy__";
++    //sleep(num_ticks); // we pipe to lsof, so give the shell some time to create the pipe, so we have determinstic fd ordering
++    for(int i = 0; i < 4;i++){
++        name[5] = '0' + i;
++        printf(1,"opening file %s with mode %d\n", name, O_WRONLY | O_CREATE);
++        int fd = open(name,O_WRONLY | O_CREATE);
++        if(fd < 0){
++            printf(2,"failed opening file\n");
++            exit();
++        }
++    }
++    for(int i = 0; i < 3;i++){
++        name[5] = '0' + i;
++        printf(1,"opening file %d with mode %d\n", i, O_RDONLY);
++        int fd = open(name,O_RDONLY);
++        if(fd < 0){
++            printf(2,"failed opening file\n");
++            exit();
++        }
++    }
++
++
++    sleep(num_ticks);
++    exit();
++}
+\ No newline at end of file
