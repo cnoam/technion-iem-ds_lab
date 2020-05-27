@@ -1,0 +1,35 @@
+diff --git a/open_files.c b/open_files.c
+index 7e99c19..d0e91f3 100644
+--- a/open_files.c
++++ b/open_files.c
+@@ -7,9 +7,28 @@
+ 
+ int main(int ac, char **av) {
+     int num_ticks = 200;
+-    // this is just a place holder
+-    printf(1, "open files exiting\n");
++    char name[] = "dummy__";
++    //sleep(num_ticks); // we pipe to lsof, so give the shell some time to create the pipe, so we have determinstic fd ordering
++    for (int i = 0; i < 4; i++) {
++        name[5] = '0' + i;
++        printf(1, "opening file %s with mode %d\n", name, O_WRONLY | O_CREATE);
++        int fd = open(name, O_WRONLY | O_CREATE);
++        if (fd < 0) {
++            printf(2, "failed opening file\n");
++            exit();
++        }
++    }
++    for (int i = 0; i < 3; i++) {
++        name[5] = '0' + i;
++        printf(1, "opening file %d with mode %d\n", i, O_RDONLY);
++        int fd = open(name, O_RDONLY);
++        if (fd < 0) {
++            printf(2, "failed opening file\n");
++            exit();
++        }
++    }
+ 
+     sleep(num_ticks);
++    printf(1, "open files exiting\n");
+     exit();
+ }

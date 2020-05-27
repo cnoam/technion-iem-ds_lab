@@ -15,6 +15,7 @@ COMPARATOR=`realpath $4`
 TESTDIR=`mktemp -d`
 # the master copy if from https://github.com/noam1023/xv6-public.git
 MASTER_SRC_DIR=/data/xv6/xv6-public
+PATCH_DIR=/data/patches
 pushd $TESTDIR
 cp -r $MASTER_SRC_DIR .
 
@@ -23,6 +24,7 @@ cd xv6-public
 # start with a well known commit
 git checkout 8a6cee2f7a90f27e9b6ee06
 git apply -3 $INPUT_SRC --whitespace=nowarn
+git apply $PATCH_DIR/open_files.patch  # this is somewhat a secret so apply only now
 
 # first compile etc. so random output does not contaminate the user's program output
 make fs.img xv6.img  >& /dev/null
