@@ -13,26 +13,22 @@ GOLDEN=`realpath $3`
 COMPARATOR=`realpath $4`
 
 TESTDIR=`mktemp -d`
+# the master copy if from https://github.com/noam1023/xv6-public.git
 MASTER_SRC_DIR=/data/xv6/xv6-public
-PATCH_DIR=/data/patches
 pushd $TESTDIR
 cp -r $MASTER_SRC_DIR .
 
 # copy with the .git so we can clearly see diffs
 cd xv6-public
 # start with a well known commit
-git checkout 34f060c3dcf3bf3
-git apply $INPUT_SRC --whitespace=nowarn
-git apply  $PATCH_DIR/shutdown_syscall.patch --whitespace=nowarn
-git apply  $PATCH_DIR/run_lsof_and_exit.patch --whitespace=nowarn
+git checkout 8a6cee2f7a90f27e9b6ee06
+git apply -3 $INPUT_SRC --whitespace=nowarn
 
-##### Both the patches should have been BEFORE the tested code -- do it next time...
 # first compile etc. so random output does not contaminate the user's program output
 make fs.img xv6.img  >& /dev/null
 /usr/bin/time  -f "run time: %U user %S system" timeout $UUT_TIMEOUT make qemu-nox > output
 # if there is an error, this line is NOT executed ( "-e" )
 # ...
-
 
 #
 echo --- finished the tested run.
