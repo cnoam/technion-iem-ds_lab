@@ -1,5 +1,6 @@
-qemu-system-i386 -nographic -drive file=fs.img,index=1,media=disk,format=raw -drive file=xv6.img,index=0,media=disk,format=raw -smp 1 -m 512
+qemu-system-i386 -nographic -drive file=fs.img,index=1,media=disk,format=raw -drive file=xv6.img,index=0,media=disk,format=raw -smp 2 -m 512
 xv6...
+cpu1: starting 1
 cpu0: starting 0
 sb: size 1000 nblocks 941 ninodes 200 nlog 30 logstart 2 inodestart 32 bmap start 58
 opening file dummy0_ with mode 513
@@ -10,20 +11,19 @@ opening file 0 with mode 0
 opening file 1 with mode 0
 opening file 2 with mode 0
 PID 	 fd 	 type 	 read/write
-1 	 0 	 regular 	 RW
-1 	 1 	 regular 	 RW
-1 	 2 	 regular 	 RW
-2 	 0 	 regular 	 RW
-2 	 1 	 regular 	 RW
-2 	 2 	 regular 	 RW
-2 	 3 	 regular 	  W
-2 	 4 	 regular 	  W
-2 	 5 	 regular 	  W
-2 	 6 	 regular 	  W
-2 	 7 	 regular 	 R
-2 	 8 	 regular 	 R
-2 	 9 	 regular 	 R
-3 	 0 	 regular 	 RW
-3 	 1 	 regular 	 RW
-3 	 2 	 regular 	 RW
-
+1 	 0 	 regular	 RW
+1 	 1 	 regular	 RW
+1 	 2 	 regular	 RW
+2 	 0 	 regular	 RW
+2 	 1 	 regular	 RW
+2 	 2 	 regular	 RW
+2 	 3 	 regular	  W
+2 	 4 	 regular	  W
+2 	 5 	 regular	  W
+2 	 6 	 regular	  W
+2 	 7 	 regular	 R
+2 	 8 	 regular	 R
+2 	 9 	 regular	 R
+3 	 0 	 regular	 RW
+3 	 1 	 regular	 RW
+3 	 2 	 regular	 RW
