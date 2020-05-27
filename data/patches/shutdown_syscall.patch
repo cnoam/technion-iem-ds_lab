@@ -1,15 +1,3 @@
-diff --git a/Makefile b/Makefile
-index 9192b12..35a06d8 100644
---- a/Makefile
-+++ b/Makefile
-@@ -182,6 +182,7 @@ UPROGS=\
- 	_wc\
- 	_lsof\
- 	_zombie\
-+	_shutdown
- 
- fs.img: mkfs README $(UPROGS)
- 	./mkfs fs.img README $(UPROGS)
 diff --git a/syscall.c b/syscall.c
 index bfd6534..5c4ede0 100644
 --- a/syscall.c
