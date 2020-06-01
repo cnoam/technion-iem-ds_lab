@@ -1,7 +1,7 @@
 #!/bin/bash -ex
 # custom made for semester: 2020Spring, course:094219, ex:2
 # $2 contains the full path to the data dir
-data_path="/home/cnoam/Desktop/Data/alice.txt"   # the data dir is mapped to this location.
+data_path="/books/alice.txt"   # the data dir is mapped to this location.
 echo Running "$1" $data_path
 echo Timeout set to $UUT_TIMEOUT
 

@@ -27,7 +27,7 @@ git apply -3 $INPUT_SRC --whitespace=nowarn
 git apply $PATCH_DIR/open_files.patch  # this is somewhat a secret so apply only now
 
 # first compile etc. so random output does not contaminate the user's program output
-make fs.img xv6.img  >& /dev/null
+make fs.img xv6.img  #   >& /dev/null
 /usr/bin/time  -f "run time: %U user %S system" timeout $UUT_TIMEOUT make qemu-nox > output
 # if there is an error, this line is NOT executed ( "-e" )
 # ...
