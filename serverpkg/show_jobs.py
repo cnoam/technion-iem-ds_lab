@@ -15,7 +15,8 @@ def show_jobs(job_status_db):
     # if job_status_db.lock.locked():
     #     return "Table is currently locked. Try again soon"
     s = html_pre + "<h1>Job table</h1> <br>" \
-                   "<h3>You can sort by any column by clicking the header</h3><br>"
+                   "<h3>You can sort by any column by clicking the header</h3><br>" \
+                   "Time is in UTC<br>"
     s += """<table class="sortable">
             <tr>
             <th>Date</th>
@@ -35,11 +36,26 @@ def show_jobs(job_status_db):
         # try to use a textual value if available for the exit code
         # this is probably the worst way to do it
         exit_code = j.exit_code
+        exit_code_name = ""
         if j.exit_code in ExitCode.values():
-            exit_code = ExitCode(j.exit_code).name
+            exit_code_name = ExitCode(j.exit_code).name
 
+        # if the exit code is COMPARE_FAILED we want to have a link that will let the user see the diffs.
+        # we need to get the ref file and the stdout.
+        # something along the lines of host/94219/show_diff?first=ref_hw_2_output&second=876
+        show_diff_button = True
+
+        ################################
+        # until I decide this is what we want
+        course_id = '94219'
+        hw_number = 2
+        ################################
+        if show_diff_button and exit_code == ExitCode.COMPARE_FAILED:
+            cmp_link = "/{}/show_diff?first=ref_hw_{}_output&second={}".format(course_id,hw_number, j.job_id)
+            button_link = '<a href="{}">diff</a>'.format(cmp_link)
+            exit_code_name = button_link
         link_to_job = '<a href=check_job_status/%d' % j.job_id + '>%d'% j.job_id + '</a>'
         s += "<tr> <td>{}</td> <td>{}</td> <td>{}</td> <td>{}</td> <td>{}</td> <td>{}</td></tr>".\
-            format(when,j.filename, link_to_job, run_time,j.status.name,exit_code)
+            format(when,j.filename, link_to_job, run_time,j.status.name,exit_code_name)
     s += "</table>"
     return s

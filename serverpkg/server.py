@@ -239,6 +239,37 @@ def show_leaderboard(course):
     return board.show(str(course))
 
 
+@app.route('/<int:course>/show_diff', methods=['GET'])
+def show_diff(course):
+    from .show_file_diff import show_html_file_diff
+    """returns an HTML page with visual diff between the reference file and the actual output.
+    arguments are passed to the GET:  first=94219/ref_hw_2_output&second=876'"""
+    print(request.args)
+    first = request.args.get('first')
+    if first is None:
+        return "arg 'first' missing",HTTPStatus.BAD_REQUEST
+    second = request.args.get('second')
+    if second is None:
+        return "arg 'second' missing",HTTPStatus.BAD_REQUEST
+    try:
+        job_id = int(second)
+    except ValueError:
+        return "arg 'second' has to be jobid", HTTPStatus.BAD_REQUEST
+
+    from_file_name = "/data/{}/{}".format(course, first)
+
+    j = _job_status_db.select_a_job(job_id)
+    if j is None:
+        return "job ID not found", 404
+
+    try:
+        with open(from_file_name) as ff:
+            fromlines = ff.readlines()
+    except FileNotFoundError:
+        return "Source file %s not found" % from_file_name, HTTPStatus.NOT_FOUND
+    return show_html_file_diff(string1=fromlines, string2=j.stdout.splitlines())
+
+
 def handle_file(package_under_test,course_number, ex_type, ex_number, reference_input, reference_output, completionCb):
     """Send the file to execution. If async, return immediately"""
 
