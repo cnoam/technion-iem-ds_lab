@@ -28,6 +28,13 @@
                "runner": "check_git_patch.sh",
                "timeout": 30,
                "allowed_extension": ["patch"]
+          },
+        {
+               "id": 2,
+               "matcher": "ignore_whitespace_match.py",
+               "runner": "check_git_patch_2.sh",
+               "timeout": 30,
+               "allowed_extension": ["patch"]
           }
           ],
       "94219": [
@@ -47,9 +54,9 @@
       },
       {
           "id": 2,
-          "matcher": "exact_match.py",
+          "matcher": "ignore_whitespace_match",
           "runner": "check_java_file_ex2.sh",
-          "timeout": 20,
+          "timeout": 90,
           "allowed_extension": ["zip"]
       }
      ]
