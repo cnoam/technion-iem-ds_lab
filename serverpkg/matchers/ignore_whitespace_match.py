@@ -23,14 +23,14 @@ def check(file1, file2):
     with open(file2) as f2:
         ref_output = remove_spaces(f2.read())
 
-    print("test:\n" + test_output)
-    print("\n\nREF:\n", ref_output)
-    p = subprocess.run(['diff', file1,file2], stdout=subprocess.PIPE)
-    print(p.stdout)
+    #print("test:\n" + test_output)
+    #print("\n\nREF:\n", ref_output)
+    p = subprocess.run(['diff','-awbZEy', '--color=always', '--suppress-common-lines', file1,file2], stdout=subprocess.PIPE)
+    print(p.stdout.decode())
     return  test_output == ref_output
 
 
 if __name__ == "__main__":
-    print("exact_match: comparing {} and {}".format(sys.argv[1], sys.argv[2]))
+    print("ignore whitespaces: comparing {} and {}".format(sys.argv[1], sys.argv[2]))
     good = check(sys.argv[1], sys.argv[2])
     exit(0 if good else 42)    #  ExitCode.COMPARE_FAILED)
