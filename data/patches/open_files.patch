@@ -10,7 +10,7 @@ index 7e99c19..d0e91f3 100644
 -    printf(1, "open files exiting\n");
 +    char name[] = "dummy__";
 +    //sleep(num_ticks); // we pipe to lsof, so give the shell some time to create the pipe, so we have determinstic fd ordering
-+    for (int i = 0; i < 4; i++) {
++    for (int i = 0; i < 6; i++) {
 +        name[5] = '0' + i;
 +        printf(1, "opening file %s with mode %d\n", name, O_WRONLY | O_CREATE);
 +        int fd = open(name, O_WRONLY | O_CREATE);
@@ -19,7 +19,7 @@ index 7e99c19..d0e91f3 100644
 +            exit();
 +        }
 +    }
-+    for (int i = 0; i < 3; i++) {
++    for (int i = 0; i < 2; i++) {
 +        name[5] = '0' + i;
 +        printf(1, "opening file %d with mode %d\n", i, O_RDONLY);
 +        int fd = open(name, O_RDONLY);
