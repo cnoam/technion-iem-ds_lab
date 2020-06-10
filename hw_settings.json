@@ -54,7 +54,7 @@
       },
       {
           "id": 2,
-          "matcher": "ignore_whitespace_match",
+          "matcher": "ignore_whitespace_match.py",
           "runner": "check_java_file_ex2.sh",
           "timeout": 90,
           "allowed_extension": ["zip"]

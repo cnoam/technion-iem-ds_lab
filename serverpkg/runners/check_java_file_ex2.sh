@@ -25,7 +25,7 @@ unzip $INPUT_SRC
 cd src
 # part1 is not tested on purpose.
 
-seed=55
+seed=666
 # part2
 fname=part2/MarkovRunnerWithInterface
 javac $fname.java
