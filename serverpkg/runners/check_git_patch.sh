@@ -22,12 +22,26 @@ cp -r $MASTER_SRC_DIR .
 # copy with the .git so we can clearly see diffs
 cd xv6-public
 # start with a well known commit
-git checkout 8a6cee2f7a90f27e9b6ee06
+COMMIT_ID=8a6cee2f7a90f27e9b6ee06
+git checkout $COMMIT_ID
+
+set +e
 git apply -3 $INPUT_SRC --whitespace=nowarn
+if [ $? -ne 0 ]; then
+    echo "------------>> Failed applying your patch. Please verify your patch contains only your changes."
+    echo "and can be applied on top of commit ID " $COMMIT_ID
+    exit 1
+fi
+
 git apply $PATCH_DIR/open_files.patch  # this is somewhat a secret so apply only now
 
 # first compile etc. so random output does not contaminate the user's program output
-make fs.img xv6.img  #   >& /dev/null
+make fs.img xv6.img   >& /dev/null
+if [ $? -ne 0 ]; then
+    echo "------------>> Failed compiling your patch."
+    exit 1
+fi
+
 /usr/bin/time  -f "run time: %U user %S system" timeout $UUT_TIMEOUT make qemu-nox > output
 # if there is an error, this line is NOT executed ( "-e" )
 # ...
