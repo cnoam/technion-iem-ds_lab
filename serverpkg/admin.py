@@ -110,7 +110,7 @@ def get_job_results():
     import re
     import datetime
     from .server import _job_status_db
-    csv_output = "ID , status\n"
+    csv_output = "Date,ID , status\n"
     for j in _job_status_db.jobs().values():
         # matches = re.findall(r"(\d{8,9})_(\d{8,9})", j.filename)
         matches = j.filename.split('_')
