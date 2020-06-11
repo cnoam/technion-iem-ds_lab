@@ -108,15 +108,21 @@ def purge_failed_jobs():
 @login_required
 def get_job_results():
     import re
+    import datetime
     from .server import _job_status_db
     csv_output = "ID , status\n"
     for j in _job_status_db.jobs().values():
-        matches = re.findall(r"(\d{8,9})_(\d{8,9})", j.filename)
+        # matches = re.findall(r"(\d{8,9})_(\d{8,9})", j.filename)
+        matches = j.filename.split('_')
         if len(matches)==0 :
             csv_output += "0, %s\n" % j.status.name
         else:
-            (id1, id2) = matches[0]
-            csv_output += "%s, %s\n%s, %s\n" % (id1,j.status.name, id2, j.status.name )
+            for id in matches:
+                if len(id)<8:
+                    continue
+                csv_output += "%s,%s, %s\n" % (datetime.datetime.now(),id, j.status.name)
+            # (id1, id2) = matches[0]
+            # csv_output += "%s, %s\n%s, %s\n" % (id1,j.status.name, id2, j.status.name )
 
     from flask import make_response
     resp = make_response(csv_output)
