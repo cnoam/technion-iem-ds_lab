@@ -110,17 +110,21 @@ def get_job_results():
     import re
     import datetime
     from .server import _job_status_db
-    csv_output = "Date,ID , status\n"
+    from .server_codes import ExitCode
+
+    csv_output = "Date,ID , status,exit code\n"
     for j in _job_status_db.jobs().values():
         # matches = re.findall(r"(\d{8,9})_(\d{8,9})", j.filename)
+        exit_code = j.exit_code
+        if j.exit_code in ExitCode.values():
+            exit_code = ExitCode(j.exit_code).name
         matches = j.filename.split('_')
         if len(matches)==0 :
             csv_output += "0, %s\n" % j.status.name
         else:
             for id in matches:
-                if len(id)<8:
-                    continue
-                csv_output += "%s,%s, %s\n" % (datetime.datetime.now(),id, j.status.name)
+                if len(id)>7: # It's ID
+                    csv_output += "%s,%s,%s, %s\n" % (datetime.datetime.now(),id, j.status.name,exit_code)
             # (id1, id2) = matches[0]
             # csv_output += "%s, %s\n%s, %s\n" % (id1,j.status.name, id2, j.status.name )
 
