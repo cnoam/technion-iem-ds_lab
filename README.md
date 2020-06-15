@@ -19,26 +19,7 @@ For support, send mail to the repository maintainer
 - ssh access (for management and file uploading) 
 ## Installing
 
-on the server that will run the checker:
-* install docker: ```sudo apt install docker```
-* clone the repo and cd into it
-* create required directories:
-  ```mkdir -p $HOME/data/logs```
-  ## First time installation
-  Currently need to manually build the dependency images:
-  ```
-  docker build -t python_cmake_base -f Dockerfile_base .
-  docker build -t py_java_cpp_base -f Dockerfile_py_java_cpp_base .
-  ```
-  
-## 
-
-* build the docker container:
-```docker build -t server . ```
-* run the server in a new container:
-```./scripts/run_docker.sh server ```
-* check that the server is up by accessing http://\<server IP>/
-
+Refer to intallation.md
 
 # Running tests of the server
 TBD
