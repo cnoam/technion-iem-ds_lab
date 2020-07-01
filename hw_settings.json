@@ -32,7 +32,7 @@
         {
                "id": 2,
                "matcher": "ignore_whitespace_match.py",
-               "runner": "check_git_patch_2.sh",
+               "runner": "check_git_patch2.sh",
                "timeout": 30,
                "allowed_extension": ["patch"]
           }
@@ -56,7 +56,7 @@
           "id": 2,
           "matcher": "ignore_whitespace_match.py",
           "runner": "check_java_file_ex2.sh",
-          "timeout": 90,
+          "timeout": 1190,
           "allowed_extension": ["zip"]
       }
      ]

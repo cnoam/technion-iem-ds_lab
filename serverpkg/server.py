@@ -323,8 +323,10 @@ def _check_sanity(comparator_file_name, executor_file_name, timeout):
     if not os.path.isfile(os.path.join(app.config['matcher_dir'],comparator_file_name)):
         raise SanityError("matcher not found: "+comparator_file_name)
     full_path = os.path.join(app.config['runner_dir'],executor_file_name)
-    if not (os.path.isfile(full_path) and os.access(full_path, os.X_OK)):
-        raise SanityError("executor not found or not eXcutable: " + executor_file_name)
+    if not os.path.isfile(full_path):
+        raise SanityError("file not found: "+executor_file_name)
+    if not os.access(full_path, os.X_OK):
+        raise SanityError("executor is not eXcutable: " + executor_file_name)
 
 
 def handle_file_async(package_under_test, course_number, ex_type, ex_number, reference_input, reference_output,completionCb):
