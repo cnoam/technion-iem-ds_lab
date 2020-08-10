@@ -72,7 +72,10 @@ class Uploader():
             logging.error("Server returned " + str(r))
             if r.status_code == HTTPStatus.SERVICE_UNAVAILABLE:
                 logging.fatal("oops. Server is asked to work when busy. This should not happen.")
-            raise RuntimeError()
+            elif r.status_code == HTTPStatus.BAD_REQUEST:
+                logging.warning("The server rejected file: " + file_name)
+            else:
+                raise RuntimeError()
 
         self.num_uploaded += 1
         logging.info(
@@ -118,6 +121,7 @@ if __name__ == "__main__":
     parser.add_argument("--host", help="hostname of the server")
     parser.add_argument("file", help="input file name (ZIP)")
     parser.add_argument("ex_num", help="exercise number (e.g. 3)")
+    parser.add_argument("course", help="course ID number (e.g. 94219)")
     args = parser.parse_args()
 
     path_to_zip_file = args.file
@@ -125,7 +129,7 @@ if __name__ == "__main__":
     server = args.host
     if server is None:
         server = "homework-tester.westeurope.cloudapp.azure.com"
-    upload_url = "/submit/hw/" + str(ex_num)
+    upload_url = "/{}/submit/hw/{}".format(args.course, str(ex_num))
     directory_to_extract_to = tempfile.mkdtemp(dir='.')
 
     print("using up to %d concurrent uploads" % MAX_JOBS)
