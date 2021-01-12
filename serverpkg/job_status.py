@@ -164,15 +164,19 @@ class JobStatusDB():
 
     # keep the db file in a place that will persist!
     # in Docker, every container restart, the local filesystem is cleaned
-    # so '/logs' is mounted on the host's file system
-    db_file_name = '/logs/jobs.db'  # TODO: move to a better location in the file system
+    # so '/db' is mounted on the host's file system
+    db_file_name = '/db/jobs.db'
 
     def _create_tables(self):
         """Create the needed SQL table if they are not already created.
         :Note: must be multiprocess safe since this code can be called concurrently
         from (e.g) 3 processes"""
-        with sqlite3.connect(self.db_file_name) as conn:
-            conn.execute("CREATE TABLE IF NOT EXISTS jobs ( {} ); ".format(Job.JobSqlSchema()))
+        try:
+            with sqlite3.connect(self.db_file_name) as conn:
+                conn.execute("CREATE TABLE IF NOT EXISTS jobs ( {} ); ".format(Job.JobSqlSchema()))
+        except sqlite3.OperationalError:
+            print("is the file system writable?\n")
+            raise
         #db_creation_sync_lock.release()
 
     def _drop_tables(self):
