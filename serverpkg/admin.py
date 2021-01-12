@@ -79,7 +79,7 @@ def _upload_and_save():
         try:
             file.save(file_name)
         except OSError as ex:
-            logger.error("Failed saving file=" + file_name, ex)
+            logger.exception("Failed saving file=" + file_name)
             raise
 
 
@@ -112,7 +112,7 @@ def get_job_results():
     from .server import _job_status_db
     from .server_codes import ExitCode
 
-    csv_output = "Date,ID , status,exit code\n"
+    csv_output = "Date,ID , status,exit code, runtime\n"
     for j in _job_status_db.jobs().values():
         # matches = re.findall(r"(\d{8,9})_(\d{8,9})", j.filename)
         exit_code = j.exit_code
@@ -124,7 +124,7 @@ def get_job_results():
         else:
             for id in matches:
                 if len(id)>7: # It's ID
-                    csv_output += "%s,%s,%s, %s\n" % (datetime.datetime.now(),id, j.status.name,exit_code)
+                    csv_output += "%s,%s,%s, %s, %s\n" % (datetime.datetime.now(),id, j.status.name,exit_code, str(j.run_time))
             # (id1, id2) = matches[0]
             # csv_output += "%s, %s\n%s, %s\n" % (id1,j.status.name, id2, j.status.name )
 
