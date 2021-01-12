@@ -74,7 +74,7 @@ class AsyncChecker(threading.Thread):
             # in the tested executable and not the tester script.
             os.environ.putenv('UUT_TIMEOUT', str(self.timeout_sec - 1))
             completed_proc = subprocess.run([executor, self.package_under_test, self.reference_input,
-                                             self.reference_output, comparator],
+                                             self.reference_output, comparator, self.data_path],
                                             check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                             timeout= self.timeout_sec)
             logger.info("job {} completed with exit code {}".format(self.job.job_id, completed_proc.returncode))

@@ -58,6 +58,14 @@
           "runner": "check_java_file_ex2.sh",
           "timeout": 1190,
           "allowed_extension": ["zip"]
+      },
+         {
+          "id": 3,
+          "matcher": "ignore_whitespace_match.py",
+          "runner": "check_java_file_ex3.sh",
+          "timeout": 100,
+          "allowed_extension": ["zip"],
+           "data_path": "/data/94219"
       }
      ]
 }

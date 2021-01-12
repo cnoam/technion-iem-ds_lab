@@ -178,6 +178,7 @@ def handle_submission(course,ex_type, number):
     compare_to_golden = False
     try:
         postfix = "GOLD" if compare_to_golden else ""
+        # TODO: make the data path an env var (part of the app configuration)
         reference_output = "/data/{}/ref_{}_{}_output{}".format(course,ex_type,number,postfix)
         reference_input  = "/data/{}/ref_{}_{}_input{}".format(course,ex_type, number, postfix)
         logger.info(" ref files supplied to handler: " + reference_input + "   " + reference_output)
@@ -265,7 +266,7 @@ def _get_config_for_ex(course_number, ex_type,ex_number):
     """choose the proper (runner,matcher,...)
        for a given (course_number,ex_type,ex_number)
        :raise KeyError, FileNotFoundError, SanityError
-       :return tuple(matcher, executor, timeout)
+       :return dict with keys for (matcher, executor, timeout, data_path, extensions) . Optional keys e.g. data_path may be missing
 
     config file in json.
     if the config file is invalid, refuse to run.
@@ -286,7 +287,7 @@ def _get_config_for_ex(course_number, ex_type,ex_number):
      "timeout" : 5,
      "blocking": true, <<<<<<< [FUTURE]optional. default to false
      "allowed_extension": ["zip", "java"], <<<< optional
-     "data_path": "/data/94219/yob" <<<< optional
+     "data_path": "/data/94219/yob" <<<< optional folder name
      }
     ]
    }
@@ -308,10 +309,8 @@ def _get_config_for_ex(course_number, ex_type,ex_number):
     matcher = e['matcher']
     executor = e['runner']
     timeout = e['timeout']
-    data_path = e['data_path']
-    extensions = e['allowed_extension']
     _check_sanity(matcher, executor, timeout)
-    return matcher, executor, timeout, data_path, extensions
+    return e
 
 
 def _check_sanity(comparator_file_name, executor_file_name, timeout):
@@ -345,16 +344,16 @@ def handle_file_async(package_under_test, course_number, ex_type, ex_number, ref
     """
     new_job = _job_status_db.add_job((ex_type, ex_number),package_under_test)
     try:
-        comparator, runner, timeout,data_path, _ = _get_config_for_ex(course_number, ex_type, ex_number)
+        config = _get_config_for_ex(course_number, ex_type, ex_number)
     except KeyError as ex:
         return "invalid ex number? exception=%s    "% str(ex),HTTPStatus.BAD_REQUEST
 
     # convert to full path
-    new_job.set_handlers(os.path.join(app.config['matcher_dir'], comparator),
-                         os.path.join(app.config['runner_dir'], runner))
+    new_job.set_handlers(os.path.join(app.config['matcher_dir'], config['matcher']),
+                         os.path.join(app.config['runner_dir'], config['runner']))
 
     async_task = AsyncChecker(_job_status_db, new_job, package_under_test,
-                        reference_input, reference_output, completionCb, full_data_path=data_path,timeout_sec=timeout)
+                        reference_input, reference_output, completionCb, full_data_path=config['data_path'],timeout_sec=config['timeout'])
     async_task.start()
     return render_template('job_submitted.html', job_id= new_job.job_id)
 
