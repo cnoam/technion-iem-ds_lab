@@ -8,4 +8,4 @@ cd checker
 ```
 * run the server in a new container:
 ```cd scripts && ./run_docker.sh server ```
-* check that the server is up by accessing http://\<server IP>/
+* check that the server is up by accessing http://server-IP/

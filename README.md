@@ -70,6 +70,7 @@ The config file json will look like:
 }
 ```    
 
+*NOTE*: if you upload the new json file (using ssh for example) to the file system of the host, you must restart the service by ```cd scripts && ./again.sh``` because the json becomes part of the docker image.
 
 ## Uploading data to the server
 Use ssh and put the data files e.g. ```ref_hw_3_input``` in $HOME/data<br>
