@@ -30,7 +30,8 @@ def _extract_run_time(string):
 
 class AsyncChecker(threading.Thread):
 
-    def __init__(self, job_db,  new_job, package_under_test, reference_input, reference_output, completion_cb, timeout_sec = 300):
+    def __init__(self, job_db,  new_job, package_under_test, reference_input, reference_output, completion_cb,
+                 full_data_path, timeout_sec=300):
         assert new_job.job_id is not None
         super().__init__(name = "job "+ str(new_job.job_id))
         self.job = new_job
@@ -40,6 +41,7 @@ class AsyncChecker(threading.Thread):
         self.completion_cb = completion_cb
         self.job_db = job_db
         self.timeout_sec = timeout_sec
+        self.data_path = full_data_path
 
     def run(self):
         import datetime
@@ -131,5 +133,5 @@ if __name__ == "__main__":
     uut = './loop'
     job = db.add_job(('hw',4),uut)
     job.set_handlers("foo_comparator", "./checker_sh.sh")
-    a = AsyncChecker(db, job, uut,"ONE","TWO", None)
+    a = AsyncChecker(db, job, uut,"ONE","TWO", full_data_path=None)
     a.start()

@@ -284,7 +284,9 @@ def _get_config_for_ex(course_number, ex_type,ex_number):
      "matcher" : "./exact_match.py",
      "runner" :"./check_cmake.sh",
      "timeout" : 5,
-     "blocking": true <<<<<<< [FUTURE]optional. default to false
+     "blocking": true, <<<<<<< [FUTURE]optional. default to false
+     "allowed_extension": ["zip", "java"], <<<< optional
+     "data_path": "/data/94219/yob" <<<< optional
      }
     ]
    }
@@ -306,8 +308,10 @@ def _get_config_for_ex(course_number, ex_type,ex_number):
     matcher = e['matcher']
     executor = e['runner']
     timeout = e['timeout']
+    data_path = e['data_path']
+    extensions = e['allowed_extension']
     _check_sanity(matcher, executor, timeout)
-    return matcher, executor, timeout
+    return matcher, executor, timeout, data_path, extensions
 
 
 def _check_sanity(comparator_file_name, executor_file_name, timeout):
@@ -341,7 +345,7 @@ def handle_file_async(package_under_test, course_number, ex_type, ex_number, ref
     """
     new_job = _job_status_db.add_job((ex_type, ex_number),package_under_test)
     try:
-        comparator, runner, timeout = _get_config_for_ex(course_number, ex_type, ex_number)
+        comparator, runner, timeout,data_path, _ = _get_config_for_ex(course_number, ex_type, ex_number)
     except KeyError as ex:
         return "invalid ex number? exception=%s    "% str(ex),HTTPStatus.BAD_REQUEST
 
@@ -350,7 +354,7 @@ def handle_file_async(package_under_test, course_number, ex_type, ex_number, ref
                          os.path.join(app.config['runner_dir'], runner))
 
     async_task = AsyncChecker(_job_status_db, new_job, package_under_test,
-                              reference_input, reference_output, completionCb, timeout_sec=timeout)
+                        reference_input, reference_output, completionCb, full_data_path=data_path,timeout_sec=timeout)
     async_task.start()
     return render_template('job_submitted.html', job_id= new_job.job_id)
 
