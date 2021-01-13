@@ -40,22 +40,28 @@ def show_jobs(job_status_db):
         if j.exit_code in ExitCode.values():
             exit_code_name = ExitCode(j.exit_code).name
 
+        link_to_job = '<a href=check_job_status/%d' % j.job_id + '>%d' % j.job_id + '</a>'
         # if the exit code is COMPARE_FAILED we want to have a link that will let the user see the diffs.
         # we need to get the ref file and the stdout.
         # something along the lines of host/94219/show_diff?first=ref_hw_2_output&second=876
         show_diff_button = True
 
         ################################
-        # until I decide this is what we want
+        # until I decide how to get this info,  this is what we want
         course_id = '94219'
-        hw_number = 2
+        hw_number = 3
+        ref_name = "/ref_hw_{}_output".format(hw_number)
         ################################
         if show_diff_button and exit_code == ExitCode.COMPARE_FAILED:
-            cmp_link = "/{}/show_diff?first=ref_hw_{}_output&second={}".format(course_id,hw_number, j.job_id)
-            button_link = '<a href="{}">diff</a>'.format(cmp_link)
-            exit_code_name = button_link
-        link_to_job = '<a href=check_job_status/%d' % j.job_id + '>%d'% j.job_id + '</a>'
-        s += "<tr> <td>{}</td> <td>{}</td> <td>{}</td> <td>{}</td> <td>{}</td> <td>{}</td></tr>".\
-            format(when,j.filename, link_to_job, run_time,j.status.name,exit_code_name)
+            page_link = "{course_id}/show_diff?first={first}&jobid={second}"\
+                .format(course_id=course_id,first=ref_name, second=j.job_id)
+            prefix = '<form action={} method="post">'.format(page_link)
+            postfix = '</form>'
+            button_link = prefix + '<input type=submit value="compare">' + postfix
+            s += "<tr> <td>{}</td> <td>{}</td> <td>{}</td> <td>{}</td> <td>{}</td> <td>{}</td></tr>". \
+                format(when, j.filename, link_to_job, run_time, j.status.name, button_link)
+        else:
+            s += "<tr> <td>{}</td> <td>{}</td> <td>{}</td> <td>{}</td> <td>{}</td> <td>{}</td></tr>".\
+                format(when,j.filename, link_to_job, run_time,j.status.name,exit_code_name)
     s += "</table>"
     return s

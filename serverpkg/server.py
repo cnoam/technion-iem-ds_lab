@@ -239,35 +239,28 @@ def show_leaderboard(course):
     return board.show(str(course))
 
 
-@app.route('/<int:course>/show_diff', methods=['GET'])
-def show_diff(course):
-    from .show_file_diff import show_html_file_diff
+# TODO this (like many others) is not related to the Server code. move to another file
+@app.route('/<int:courseId>/show_diff', methods=['GET', 'POST'])
+def show_diff(courseId):
     """returns an HTML page with visual diff between the reference file and the actual output.
-    arguments are passed to the GET:  first=94219/ref_hw_2_output&second=876'"""
+    arguments are passed to the GET/POST:  first=94219/ref_hw_2_output&jobid=876'
+    """
+    from .show_file_diff import show_html_diff
     print(request.args)
     first = request.args.get('first')
-    if first is None:
-        return "arg 'first' missing",HTTPStatus.BAD_REQUEST
-    second = request.args.get('second')
+    second = request.args.get('jobid')
+
     if second is None:
-        return "arg 'second' missing",HTTPStatus.BAD_REQUEST
+        return "arg 'jobid' missing", HTTPStatus.BAD_REQUEST
     try:
         job_id = int(second)
     except ValueError:
-        return "arg 'second' has to be jobid", HTTPStatus.BAD_REQUEST
+        return "arg 'jobid' has to be a job id", HTTPStatus.BAD_REQUEST
 
-    from_file_name = "/data/{}/{}".format(course, first)
-
-    j = _job_status_db.select_a_job(job_id)
-    if j is None:
-        return "job ID not found", 404
-
-    try:
-        with open(from_file_name) as ff:
-            fromlines = ff.readlines()
-    except FileNotFoundError:
-        return "Source file %s not found" % from_file_name, HTTPStatus.NOT_FOUND
-    return show_html_file_diff(string1=fromlines, string2=j.stdout.splitlines())
+    job = _job_status_db.select_a_job(job_id)
+    if job is None:
+        return "job ID not found", HTTPStatus.NOT_FOUND
+    return show_html_diff(courseId, job, first)
 
 
 def handle_file(package_under_test,course_number, ex_type, ex_number, reference_input, reference_output, completionCb):

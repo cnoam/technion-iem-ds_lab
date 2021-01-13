@@ -25,8 +25,8 @@ def check(file1, file2):
 
     #print("test:\n" + test_output)
     #print("\n\nREF:\n", ref_output)
-    p = subprocess.run(['diff','-awbZEy', '--suppress-common-lines', file1,file2], stdout=subprocess.PIPE)
-    print(p.stdout.decode())
+    #p = subprocess.run(['diff','-awbZEy', '--suppress-common-lines', file1,file2], stdout=subprocess.PIPE)
+    #print(p.stdout.decode())
     return  test_output == ref_output
 
 
