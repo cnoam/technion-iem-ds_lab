@@ -1,14 +1,15 @@
-#!/bin/bash -ex
+#!/bin/bash
+set -exuo pipefail
 # custom made for semester: 2020Spring, course:094219, ex:3
 # $2 contains the full path to the data dir
-echo Running "$1" "$2" "$3" "$4"
+echo Running "$1" "$2" "$3" "$4 $5"
 echo Timeout set to "$UUT_TIMEOUT"
 
 INPUT_SRC=`realpath $1`
 INPUT_DATA=`realpath $2`
 GOLDEN=`realpath $3`
 COMPARATOR=`realpath $4`
-DATA_DIR=/hw3data/
+DATA_DIR=`realpath $5`
 
 TESTDIR=`mktemp -d`
 pushd /tmp
@@ -29,7 +30,9 @@ fname=DocumentRetrieval
 javac $fname.java
 
 echo ==== compilation OK ====
-/usr/bin/time  -f "run time: %U user %S system"  timeout $UUT_TIMEOUT java $fname  $DATA_DIR $INPUT_DATA > output
+# write the output to both stdout and local file.
+# the local file is used for pass/fail checking here (but in the future might be moved to inside the python code)
+/usr/bin/time  -f "run time: %U user %S system"  timeout $UUT_TIMEOUT java $fname  $DATA_DIR $INPUT_DATA | tee output
 
 echo ==== finished the tested run ====
 set +e
@@ -42,7 +45,7 @@ if [ $retVal -eq 42 ]; then
     exit 42
 fi
 if [ $retVal -ne 0 ]; then
-    echo "Sorry: some error occured. Please examine the STDERR"
+    echo "Sorry: some error occurred. Please examine the STDERR"
     exit 43
 fi
 popd

@@ -65,7 +65,7 @@
           "runner": "check_java_file_ex3.sh",
           "timeout": 100,
           "allowed_extension": ["zip"],
-           "data_path": "/data/94219"
+           "data_path": "/data/94219/AP_Coll_Parsed"
       }
      ]
 }
