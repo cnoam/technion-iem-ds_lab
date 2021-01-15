@@ -8,6 +8,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required
 from werkzeug.utils import redirect
 from flask_login import UserMixin
 
+from .motd import Motd
 from . server import app, logger
 
 login_manager = LoginManager()
@@ -52,8 +53,14 @@ def logout():
 @login_required
 def admin_page():
     if request.method == 'POST':
-        _upload_and_save()
-    return render_template('admin.html')
+        if 'file' in request.files:
+            _upload_and_save()
+        else:
+            msg = None
+            if request.form.getlist('set'):
+                msg = request.form['motd']
+            Motd().set_message(msg)
+    return render_template('admin.html', motd = Motd().get_message())
 
 
 @app.route("/admin/show_ex_config")

@@ -1,5 +1,11 @@
 <html>
 <H1>Automatic homework checker</H1>
+
+
+{% if motd is not none %}
+    <hr><p style="color: crimson">{{ motd }}</p> <hr><br>
+{% endif %}
+
 <br> This system is under development. <br>
 <p> Please report bugs to <a href="mailto://cnoam@technion.ac.il">Noam</a> </p>
 <br>

@@ -18,6 +18,14 @@ Upload config file
     </form>
 
 <hr>
+<!--  add message that will appear as header in pages seen by users -->
+<form action="" method="post">
+    <input type="text" cols= 80 style="width:200px; height:50px;"  placeholder="{{motd}}" name="motd" value="{{request.form.motd_header }}">
+    <input class="btn btn-default" type="submit" name="set" value="send MOTD">
+    <input class="btn btn-default" type="submit" name="reset" value="Clear">
+</form>
+
+<hr>
 <a href="./jobs_as_csv">get the jobs as CSV file</a>
 <a href="./">HOME</a><br>
 <a href="./admin/show_ex_config"> show ex configuration</a><br>

@@ -12,6 +12,11 @@
 <html>
 <body>
     <title>Upload your homework for self checking</title>
+
+    {% if motd is not none %}
+        <hr><p style="color: crimson">{{ motd }}</p> <hr><br>
+    {% endif %}
+
     <h1>Course {{course_number}}: Upload new File for exercise {{hw_number}}</h1>
     <p>This tool accepts ONLY files of type {{file_types}} with a size limit of 15MB.</p>
     After uploading, the server will run the checker with your file. <br>

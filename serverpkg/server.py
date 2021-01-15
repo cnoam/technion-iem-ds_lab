@@ -3,6 +3,8 @@
 import os
 import sys
 
+from .motd import Motd
+
 if sys.version_info.major != 3:
     raise Exception("must use python 3")
 
@@ -119,7 +121,7 @@ def unauthorized_message(e):
 # ---------------------------------
 @app.route('/',methods = ['GET'])
 def index():
-    return render_template('index.html', running_locally = _running_on_dev_machine())
+    return render_template('index.html', running_locally=_running_on_dev_machine(),  motd = Motd().get_message())
 
 
 @app.route('/status', methods=['GET'])
@@ -144,7 +146,8 @@ def handle_submission(course,ex_type, number):
         return render_template('upload_homework.html',
                                file_types=str(ALLOWED_EXTENSIONS),
                                course_number=course, hw_number=number,
-                               num_jobs_running=_job_status_db.num_running_jobs())
+                               num_jobs_running=_job_status_db.num_running_jobs(),
+                               motd=Motd().get_message())
 
     if _job_status_db.num_running_jobs() >= MAX_CONCURRENT_JOBS:
         return "Busy! try again in a few seconds.", HTTPStatus.SERVICE_UNAVAILABLE
