@@ -40,19 +40,18 @@
       "94219": [
      {
           "id": 0,
-          "matcher": "exact_match.py",
+          "matcher": "ignore_whitespace_match.py",
           "runner": "check_java_file_ex0.sh",
           "timeout": 10,
           "allowed_extension": ["java"]
      },
-      {
+     {
           "id": 1,
-          "matcher": "exact_match.py",
+          "matcher": "ignore_whitespace_match.py",
           "runner": "check_java_file_ex1.sh",
-          "timeout": 20,
-          "allowed_extension": ["zip"]
-      },
-      {
+          "timeout": 10,
+          "allowed_extension": ["java"]
+     },{
           "id": 2,
           "matcher": "ignore_whitespace_match.py",
           "runner": "check_java_file_ex2.sh",
@@ -66,7 +65,14 @@
           "timeout": 100,
           "allowed_extension": ["zip"],
            "data_path": "/data/94219/AP_Coll_Parsed"
+      },
+      {
+          "id": 30,
+          "matcher": "ignore_whitespace_match.py",
+          "runner": "check_java_file_ex3.sh",
+          "timeout": 100,
+          "allowed_extension": ["zip"],
+           "data_path": "/data/94219/AP_Coll_Parsed"
       }
-     ]
+]
 }
-    
