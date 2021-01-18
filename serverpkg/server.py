@@ -41,9 +41,11 @@ if MAX_CONCURRENT_JOBS is None:
 
 def _configure_app():
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
-    app.config['matcher_dir'] = 'serverpkg/matchers'
-    app.config['runner_dir'] = 'serverpkg/runners'
-    app.config['assignment_config_file'] = 'hw_settings.json'
+    data_path = os.environ['CHECKER_DATA_DIR']
+    app.config['data_dir'] = data_path + '/data'
+    app.config['matcher_dir'] = data_path + '/matchers'
+    app.config['runner_dir'] = data_path + '/runners'
+    app.config['assignment_config_file'] = data_path + '/hw_settings.json'
 
     app.config['LDAP_HOST'] = 'ldap://ccldap.technion.ac.il'
     app.config['LDAP_BASE_DN'] = 'ou=tx,dc=technion,dc=ac,dc=il'
@@ -70,8 +72,7 @@ def allowed_file(filename):
 def _running_on_dev_machine():
     """:return True if this is my dev machine"""
     import socket
-    return socket.gethostname() == 'noam-cohen-u.iem.technion.ac.il'
-
+    return 'noam' in socket.gethostname()
 # ---------------------
 
 _configure_app()
@@ -181,9 +182,8 @@ def handle_submission(course,ex_type, number):
     compare_to_golden = False
     try:
         postfix = "GOLD" if compare_to_golden else ""
-        # TODO: make the data path an env var (part of the app configuration)
-        reference_output = "/data/{}/ref_{}_{}_output{}".format(course,ex_type,number,postfix)
-        reference_input  = "/data/{}/ref_{}_{}_input{}".format(course,ex_type, number, postfix)
+        reference_output = "{}/{}/ref_{}_{}_output{}".format(app.config['data_dir'],course,ex_type,number,postfix)
+        reference_input  = "{}/{}/ref_{}_{}_input{}".format(app.config['data_dir'],course,ex_type, number, postfix)
         logger.info(" ref files supplied to handler: " + reference_input + "   " + reference_output)
         logger.info("uploaded file: " + uploaded_file_path)
         the_reply = handle_file(uploaded_file_path,course, ex_type, number, reference_input, reference_output,
@@ -349,7 +349,11 @@ def _check_sanity(comparator_file_name, executor_file_name, timeout):
 
     # check that the file exists and is executable
     import os
-    assert app.config['matcher_dir']
+    if not app.config['matcher_dir']:
+        raise SanityError("matchers dir not set. Check ENV var CHECKER_DATA_DIR")
+
+    if not app.config['runner_dir']:
+        raise SanityError("runners dir not set. Check ENV var CHECKER_DATA_DIR")
     if not os.path.isfile(os.path.join(app.config['matcher_dir'],comparator_file_name)):
         raise SanityError("matcher not found: "+comparator_file_name)
     full_path = os.path.join(app.config['runner_dir'],executor_file_name)
@@ -379,8 +383,9 @@ def handle_file_async(package_under_test, course_number, ex_type, ex_number, ref
     new_job.set_handlers(os.path.join(app.config['matcher_dir'], config['matcher']),
                          os.path.join(app.config['runner_dir'], config['runner']))
 
+    data_path = os.path.join(app.config['data_dir'], config.get('data_path'))
     async_task = AsyncChecker(_job_status_db, new_job, package_under_test,
-                        reference_input, reference_output, completionCb, full_data_path=config.get('data_path'),timeout_sec=config['timeout'])
+                        reference_input, reference_output, completionCb, full_data_path=data_path, timeout_sec=config['timeout'])
     async_task.start()
     return render_template('job_submitted.html', job_id= new_job.job_id)
 

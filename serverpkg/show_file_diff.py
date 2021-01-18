@@ -2,6 +2,9 @@ import difflib
 from http import HTTPStatus
 from typing import List
 
+from serverpkg.server import app
+
+
 def show_html_file_diff(string1, string2):
     """ create an html page with a table showing the textual diff between file1 and file2
     :param string1: list(string) content of file1
@@ -43,7 +46,7 @@ def show_html_diff(courseId, job, first):
         # get the reference file used
         pass
     else:
-        from_file_name = "/data/{}/{}".format(courseId, first)
+        from_file_name = "{}/{}/{}".format(app.config['data_dir'],courseId, first)
         try:
             with open(from_file_name) as ff:
                 fromlines = ff.readlines()
