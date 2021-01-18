@@ -27,6 +27,29 @@ TBD
 #Contributing
  use pull requests in github
 
+# Directory structure
+The source code is stored in thie repo, and the auxiary data (which compises the matchers, runners, test configurations, data files for each test) is stored in a different repo. This separation ease the maintance of both repos and prevents the need to rebuild the docker image for changes in homework configurations.
+## Data directory
+The data directory can be anywhere in the host file system and must have the following structure: <br>
+```
+{data-dir}
+       data/   <---- each course has its own dir, named as the course ID 
+       matchers/
+       runners/
+       hw_config.json
+```
+
+The path to the data directory is passed to the server in environment variable **CHECKER_DATA_DIR** as a full path.
+<br>
+<br>
+
+ ## storing the database
+ The database (job submissions) is stored in sqlite3 file in a directory that must be writable.
+## storing the log output
+The logger output is written to a directory in the host file system that must be writable.
+
+All the above directories are mounted in the run_docker.sh script.
+
 # Instructions for the Tutor
 As the tutor, you have to prepare:
 - code that will execute the program
@@ -39,7 +62,7 @@ As the tutor, you have to prepare:
 
 These coding parts are called __runner__ and __matcher__ (aka comparator)
 
-Choosing the runner and matcher is done by reading a configuration file (located at {rootdir}/hw_settings.json)
+Choosing the runner and matcher is done by reading a configuration file (located at {data-dir}/hw_settings.json)
 
 You can see the current content in ```host_address/admin/show_ex_config```
    
@@ -70,11 +93,17 @@ The config file json will look like:
 }
 ```    
 
-*NOTE*: if you upload the new json file (using ssh for example) to the file system of the host, you must restart the service by ```cd scripts && ./again.sh``` because the json becomes part of the docker image.
+
 
 ## Uploading data to the server
-Use ssh and put the data files e.g. ```ref_hw_3_input``` in $HOME/data<br>
-It will be mapped into the server's file system. 
+Use ssh and put the data files  in {data-dir}/data/courseId<br>
+ e.g.
+  /mydata/data/94219/ref_hw_3_input
+ /mydata/data/94219/ref_hw_3_output
+ /mydata/data/94219/data_files_folder
+ 
+ 
+It will be mapped into the server's file system (This is done in run_docker.sh)
 <br>
 
 ## Using the correct runner
@@ -96,7 +125,7 @@ These runners are already implemented:
 All matchers are written in Python3. 
 
 Before writing a new one, check the existing scripts  - maybe you can use one of them as a baseline.
-1. save the new ```tester.py``` in ```serverpkg.matchers``` dir.<br>
+1. save the new ```tester.py``` in ```{data-dir}/matchers``` dir.<br>
     The script must implement ```check(output_from_test_file_name,reference_file_name)``` <br>
     and return True if the files are considered a match.<br>
     For example ```def check(f1,ref): return True```<br>
@@ -107,9 +136,16 @@ Before writing a new one, check the existing scripts  - maybe you can use one of
         exit(0 if good else ExitCode.COMPARE_FAILED) </pre> 
     
 2. Update the config file by uploading an updated version.<br>
-    The current config can be seen at http://your-host/admin/show_ex_config, <br>
-    and uploading from the admin page at http://your-host/admin
-3. build a new Docker container, stop the current one, start the new one:
+    The current config can be seen at ```http://your-host/admin/show_ex_config ```<br>
+    and uploading from the admin page at ```http://your-host/admin```
+    <br>
+    **Normally there is no need even to restart the docker container since the matcher and runner are called in a new shell for every executed test.**
+    
+    
+To rebuild the docker image and immediately run it:<br>
+    
+    
+ build a new Docker container, stop the current one, start the new one:
 ```
 $ ssh myhost
 (myhost) $ cd checker
@@ -125,7 +161,7 @@ First, build the container: (in the project root directory)
 then run it
 > cd scripts && ./run_docker.sh server
 
-OR - if you just want to build - stop - start fresh again:
+OR  if you just want to build - stop - start fresh again:
 > cd scripts &&  ./again.sh
 
 
@@ -149,6 +185,7 @@ During development, it is easier to run only the python code without Docker:
   ```
   
   ## gunicorn
+  
   To run with gunicorn (one step closer to the realworld configuration):
   ```
   cd ~/checker
