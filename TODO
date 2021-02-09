@@ -1,0 +1,17 @@
+BUGS
+
+
+
+
+
+TESTS
+multi thread access to shared resources such as the database file (pickle)
+
+
+
+FEATURES
+- add support for LDAP
+
+- refactor the docker images so we don't have gcc/cmake/qemu if not needed (why?)
+
+- refactor the Docker etc. so no need to rebuild the image while debugging (e.g. runners are in hosts' file system)

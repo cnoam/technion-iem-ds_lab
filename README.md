@@ -33,7 +33,12 @@ The source code is stored in thie repo, and the auxiary data (which compises the
 The data directory can be anywhere in the host file system and must have the following structure: <br>
 ```
 {data-dir}
-       data/   <---- each course has its own dir, named as the course ID 
+       data/   <---- each course has its own sub dirirectory, named as the course ID 
+           94219/
+              ex1/
+                data files
+              ex2/
+                data files
        matchers/
        runners/
        hw_config.json
@@ -43,12 +48,12 @@ The path to the data directory is passed to the server in environment variable *
 <br>
 <br>
 
- ## storing the database
- The database (job submissions) is stored in sqlite3 file in a directory that must be writable.
+## storing the database
+ The database (job submissions) is stored in sqlite3 file in a directory that must be writable in the host machine.
 ## storing the log output
 The logger output is written to a directory in the host file system that must be writable.
 
-All the above directories are mounted in the run_docker.sh script.
+All the above directories are mounted in the **run_docker.sh** script.
 
 # Instructions for the Tutor
 As the tutor, you have to prepare:
@@ -87,6 +92,7 @@ The config file json will look like:
      "id": 2,
      "matcher" : "tester_ex2.py",
      "runner" :"check_py.sh",
+     "data_dir": "relative/path/to/DATA_DIR", <<< optional
      "timeout" : 20
     }
  ]

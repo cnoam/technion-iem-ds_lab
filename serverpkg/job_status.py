@@ -165,12 +165,28 @@ class JobStatusDB():
     # keep the db file in a place that will persist!
     # in Docker, every container restart, the local filesystem is cleaned
     # so '/db' is mounted on the host's file system
-    db_file_name = '/db/jobs.db'
+    # @param: db_dir_name: full path to the database directory. Can be non existent
+    def __init__(self, db_dir_name : str):
+        import os
+        self.db_dir_name = db_dir_name
+        self.db_file_name = os.path.join(db_dir_name, "jobs.db")
 
     def _create_tables(self):
         """Create the needed SQL table if they are not already created.
         :Note: must be multiprocess safe since this code can be called concurrently
         from (e.g) 3 processes"""
+        #db_creation_sync_lock.lock() #TODO: finish coding the multi process safe creation or make it redundant
+
+        # make sure the db dir is created
+        import os
+        logger.info("opening file %s" % self.db_file_name)
+        try:
+            os.mkdir(self.db_dir_name)
+        except FileExistsError:
+            pass
+        except PermissionError:
+            logger.error("Permission denied when trying to create the DB directory")
+            raise
         try:
             with sqlite3.connect(self.db_file_name) as conn:
                 conn.execute("CREATE TABLE IF NOT EXISTS jobs ( {} ); ".format(Job.JobSqlSchema()))

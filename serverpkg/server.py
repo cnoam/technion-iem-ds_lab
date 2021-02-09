@@ -25,10 +25,6 @@ app = Flask(__name__, template_folder='./templates')
 logger = init_logger('server')
 
 # The following import is needed to prepare the admin endpoints
-
-_job_status_db = job_status.JobStatusDB()
-_job_status_db._create_tables()
-
 # regretably, the admin module uses _job_status_db so it can be imported only here
 from . import admin
 
@@ -46,6 +42,7 @@ def _configure_app():
     app.config['matcher_dir'] = data_path + '/matchers'
     app.config['runner_dir'] = data_path + '/runners'
     app.config['assignment_config_file'] = data_path + '/hw_settings.json'
+    app.config['database_dir'] = os.environ['CHECKER_LOG_DIR']
 
     app.config['LDAP_HOST'] = 'ldap://ccldap.technion.ac.il'
     app.config['LDAP_BASE_DN'] = 'ou=tx,dc=technion,dc=ac,dc=il'
@@ -76,6 +73,8 @@ def _running_on_dev_machine():
 # ---------------------
 
 _configure_app()
+_job_status_db = job_status.JobStatusDB(app.config['database_dir'])
+_job_status_db._create_tables()
 
 
 
@@ -160,6 +159,9 @@ def handle_submission(course,ex_type, number):
     except SanityError as ex:
         return "<H1>Message to Tutor</H1>There is something wrong in the config file for this exercise.<br>"\
                "Please fix and submit again. <br><strong>Error: " + str(ex) + '</strong>'
+    except FileNotFoundError:
+        return "<H1>Message to Tutor</H1>The config file is not found. Deleted or acces problems?<br>" , HTTPStatus.NOT_FOUND
+
     # check if the post request has the file part
     if 'file' not in request.files:
         flash('No file part')
@@ -383,7 +385,7 @@ def handle_file_async(package_under_test, course_number, ex_type, ex_number, ref
     new_job.set_handlers(os.path.join(app.config['matcher_dir'], config['matcher']),
                          os.path.join(app.config['runner_dir'], config['runner']))
 
-    data_path = os.path.join(app.config['data_dir'], config.get('data_path'))
+    data_path = os.path.join(app.config['data_dir'], config.get('data_path',""))
     async_task = AsyncChecker(_job_status_db, new_job, package_under_test,
                         reference_input, reference_output, completionCb, full_data_path=data_path, timeout_sec=config['timeout'])
     async_task.start()
@@ -430,6 +432,9 @@ def _purge_db_stale_jobs():
     _job_status_db.delete_jobs(Job.Status.pending)
 
 
+try:
+    course_id = _get_configured_course_ids()
+except FileNotFoundError:
+    logger.fatal("Configuration file not found. Check permissions and name")
 
-course_id = _get_configured_course_ids()
 _purge_db_stale_jobs()
