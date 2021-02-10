@@ -5,9 +5,9 @@ import sqlite3
 from enum import Enum
 
 import utils
-from .logger_init import init_logger
+from .logger import Logger
 
-logger = init_logger('job_status')
+logger = Logger(__name__).logger
 
 
 class Job():

@@ -8,16 +8,14 @@
 IMAGE=$1
 set -u
 set +e
-mkdir -p $CHECKER_DATA_DIR/{db,logs}
-chmod -R 777 $CHECKER_DATA_DIR/{db,logs}
+mkdir -p $CHECKER_DATA_DIR/logs
+chmod  777 $CHECKER_DATA_DIR/logs
 set -e
  docker run -d --mount type=bind,source=$CHECKER_DATA_DIR,target=/data,readonly \
  	       --mount type=bind,source=$CHECKER_DATA_DIR/logs,target=/logs\
-	       --mount type=bind,source=$CHECKER_DATA_DIR/db,target=/db\
 	       --env CHECKER_DATA_DIR=/data \
 	       --env CHECKER_LOG_DIR=/logs \
-             -p80:8000 \
-	     --user nobody \
-	     --restart unless-stopped \
+         -p80:8000 \
+	       --user nobody \
+	       --restart unless-stopped \
              $IMAGE
-

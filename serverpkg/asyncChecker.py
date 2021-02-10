@@ -2,10 +2,10 @@ import re
 import subprocess
 import threading
 
-from .logger_init import init_logger
+from .logger import Logger
 from .server_codes import ExitCode
 
-logger = init_logger('asyncChecker')
+logger = Logger(__name__).logger
 
 
 def _extract_run_time(string):

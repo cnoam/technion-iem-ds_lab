@@ -8,31 +8,14 @@ from .motd import Motd
 if sys.version_info.major != 3:
     raise Exception("must use python 3")
 
-from .logger_init import init_logger
+
+from .logger import Logger
 from http import HTTPStatus
 from flask import Flask, flash, request, redirect, render_template
 from werkzeug.utils import secure_filename
 import subprocess
 from .asyncChecker import AsyncChecker
 from . import show_jobs, job_status
-
-
-
-
-# -- prepare some global vars
-app = Flask(__name__, template_folder='./templates')
-
-logger = init_logger('server')
-
-# The following import is needed to prepare the admin endpoints
-# regretably, the admin module uses _job_status_db so it can be imported only here
-from . import admin
-
-
-ALLOWED_EXTENSIONS = {'zip','gz','xz','py','sh','patch','java'} # TODO: replace with per exercise list
-MAX_CONCURRENT_JOBS = os.cpu_count()
-if MAX_CONCURRENT_JOBS is None:
-    MAX_CONCURRENT_JOBS = 2  # rumored bug in getting the cpu count
 
 
 def _configure_app():
@@ -71,6 +54,22 @@ def _running_on_dev_machine():
     import socket
     return 'noam' in socket.gethostname()
 # ---------------------
+
+
+# -- prepare some global vars
+app = Flask(__name__, template_folder='./templates')
+logger = Logger(__name__).logger
+
+# The following import is needed to prepare the admin endpoints
+# regretably, the admin module uses _job_status_db so it can be imported only here
+from . import admin
+
+
+ALLOWED_EXTENSIONS = {'zip','gz','xz','py','sh','patch','java'} # TODO: replace with per exercise list
+MAX_CONCURRENT_JOBS = os.cpu_count()
+if MAX_CONCURRENT_JOBS is None:
+    MAX_CONCURRENT_JOBS = 2  # rumored bug in getting the cpu count
+
 
 _configure_app()
 _job_status_db = job_status.JobStatusDB(app.config['database_dir'])
