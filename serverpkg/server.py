@@ -386,7 +386,7 @@ def handle_file_async(package_under_test, course_number, ex_type, ex_number, ref
 
     data_path = os.path.join(app.config['data_dir'], config.get('data_path',""))
     async_task = AsyncChecker(_job_status_db, new_job, package_under_test,
-                        reference_input, reference_output, completionCb, full_data_path=data_path, timeout_sec=config['timeout'])
+                        reference_input, reference_output, completionCb, full_data_path=config['data_path'],timeout_sec=config['timeout'])
     async_task.start()
     return render_template('job_submitted.html', job_id= new_job.job_id)
 
