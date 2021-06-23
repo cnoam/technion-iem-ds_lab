@@ -2,7 +2,7 @@ FROM  py_java_cpp_base
 MAINTAINER Noam Cohen "cnoam@technion.ac.il"
 # install packages before copying the sources so they are cached in the next runs of docker-build
 RUN pip3 install --no-cache-dir -r requirements.txt
-
+RUN apt-get update && apt-get install -y jq
 copy . /app
 WORKDIR /app
 EXPOSE 8000

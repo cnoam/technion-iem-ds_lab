@@ -16,6 +16,5 @@ set -e
 	       --env CHECKER_DATA_DIR=/data \
 	       --env CHECKER_LOG_DIR=/logs \
          -p80:8000 \
-	       --user nobody \
 	       --restart unless-stopped \
              $IMAGE
