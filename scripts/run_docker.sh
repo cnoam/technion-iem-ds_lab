@@ -15,6 +15,7 @@ set -e
  	       --mount type=bind,source=$CHECKER_DATA_DIR/logs,target=/logs\
 	       --env CHECKER_DATA_DIR=/data \
 	       --env CHECKER_LOG_DIR=/logs \
+	       --env SPARK_CLUSTER_NAME=noam-c3 \
          -p80:8000 \
 	       --restart unless-stopped \
              $IMAGE
