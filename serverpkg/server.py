@@ -267,6 +267,25 @@ def show_diff(courseId):
     return show_html_diff(courseId, job, first)
 
 
+
+@app.route('/spark/logs')
+def get_spark_logs():
+    import re
+    from serverpkg.spark import queries
+    """ get the logs from an application running in spark server.
+    This is a prototype quality code -- hardcoded everything"""
+    appId=request.args.get('appId') # application_1624861312520_0009
+    if appId is None:
+        return "use ?appId=application_1624861312520_0009", HTTPStatus.BAD_REQUEST
+    match = re.findall(r"^application_\d{13}_\d{4}$", appId)
+    if match is None or len(match) != 1:
+        return "use ?appId=application_1624861312520_0009", HTTPStatus.BAD_REQUEST
+    cluster_name = os.getenv('SPARK_CLUSTER_NAME')
+    cluster_url_name = f"{cluster_name}-ssh.azurehdinsight.net"
+    if cluster_name is None:
+        return "Internal Error: missing SPARK_CLUSTER_URL env var in the server", HTTPStatus.INTERNAL_SERVER_ERROR
+    return queries.get_logs(cluster_url_name,appId)
+
 def handle_file(package_under_test,course_number, ex_type, ex_number, reference_input, reference_output, completionCb):
     """Send the file to execution. If async, return immediately"""
 
