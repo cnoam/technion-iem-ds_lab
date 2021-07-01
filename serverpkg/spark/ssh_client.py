@@ -1,5 +1,6 @@
 #
 # pip install ssh2-python
+import logging
 import socket
 
 from ssh2.session import Session
@@ -8,32 +9,36 @@ from ssh2.session import Session
 def ssh2_ssh(host, port, user, password, command):
     # Make socket, connect
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect((host, port))
+    try:
+        sock.connect((host, port))
 
-    # Initialise
-    session = Session()
-    session.handshake(sock)
+        # Initialise
+        session = Session()
+        session.handshake(sock)
 
-    session.userauth_password(user, password)
+        session.userauth_password(user, password)
 
-    # Public key blob available as identities[0].blob
+        # Public key blob available as identities[0].blob
 
-    # Channel initialise, exec and wait for end
-    channel = session.open_session()
-    channel.execute(command)
-    channel.wait_eof()
-    channel.close()
-    channel.wait_closed()
+        # Channel initialise, exec and wait for end
+        channel = session.open_session()
+        channel.execute(command)
+        channel.wait_eof()
+        channel.close()
+        channel.wait_closed()
 
-    # Print output
-    output = b''
-    size, data = channel.read()
-    while size > 0:
-        output += data
+        # Print output
+        output = b''
         size, data = channel.read()
+        while size > 0:
+            output += data
+            size, data = channel.read()
 
-    # Get exit status
-    output = output.decode("utf-8").strip()
+        # Get exit status
+        output = output.decode("utf-8").strip()
+    except socket.gaierror as ex:
+        logging.error(ex)
+        return None, ex.errno
     #print(f'{host}, {output}, {channel.get_exit_status()}')
     return output, channel.get_exit_status()
 
