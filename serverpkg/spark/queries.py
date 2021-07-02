@@ -1,7 +1,9 @@
 from http import HTTPStatus
 import pssh
 import utils
-from ssh_client import ssh_client
+from .ssh_client import ssh_client
+from serverpkg.logger import Logger
+logger = Logger(__name__).logger
 
 
 def get_logs(cluster_url_name, appId):
@@ -17,12 +19,14 @@ def get_logs(cluster_url_name, appId):
 
     # get the log of stdout from the last run from this appId
     cmd = f"yarn logs  -am -1 -log_files stdout -applicationId {appId}"
-    #logger.info(f"connecting using SSH to Spark node {cluster_url_name}")
+    logger.info(f"connecting using SSH to Spark node {cluster_url_name}")
     try:
         output = ssh_client(host=cluster_url_name, user="sshuser", password=passwd, command=cmd)
     except pssh.exceptions.UnknownHostError as ex:
         print("SSH receive error" + str(ex))
         return utils.wrap_html_source(str(ex)), HTTPStatus.SERVICE_UNAVAILABLE
+    except Exception as ex:
+        return utils.wrap_html_source(str(ex)), HTTPStatus.INTERNAL_SERVER_ERROR
 
     return utils.wrap_html_source(output), HTTPStatus.OK
 

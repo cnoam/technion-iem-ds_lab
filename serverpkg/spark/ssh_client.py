@@ -28,11 +28,11 @@ def parallel_ssh(host, user, password, command):
     client.join()
     stdout = ""
     for host_output in output:
+        if host_output.exit_code != 0 :
+            raise Exception("host returned exit code " + str(host_output.exit_code) )
         stdout_li = list(host_output.stdout)
         for line in stdout_li:
             stdout += line + "\n"
-
-    print("output", stdout)
     return stdout
 
 
@@ -40,5 +40,6 @@ def ssh_client(host, user, password, command):
     return parallel_ssh(host, user, password, command)
 
 if __name__ == "__main__":
-    o = parallel_ssh("localhost", user="cnoam", password="", command="ls /")
+    host = "noam-spark-ssh.azurehdinsight.net"
+    o = parallel_ssh(host=host, user="sshuser", password="%Qq12345678", command="ls /")
     print(o)
