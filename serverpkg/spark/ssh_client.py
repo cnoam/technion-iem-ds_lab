@@ -1,48 +1,44 @@
 #
-# pip install ssh2-python
+# pip install parallel-ssh
 import logging
-import socket
+from pssh.clients import ParallelSSHClient
+from pssh.utils import enable_host_logger
 
-from ssh2.session import Session
+# loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
+# for logger in loggers:
+#     logger.setLevel(logging.DEBUG)
+   
+from pssh.clients import ParallelSSHClient
+
+# client = ParallelSSHClient(['localhost', 'localhost'], user="cnoam", password="bb@Zduke" )
+# output = client.run_command('ls /')
+# client.join()
+#
+# for host_output in output:
+#     hostname = host_output.host
+#     stdout = list(host_output.stdout)
+#     print("Host %s: exit code %s, output %s" % (
+#           hostname, host_output.exit_code, stdout))
 
 
-def ssh2_ssh(host, port, user, password, command):
-    # Make socket, connect
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        sock.connect((host, port))
+def parallel_ssh(host, user, password, command):
+    #enable_host_logger()
+    client = ParallelSSHClient([host], user=user, password=password)
+    output = client.run_command(command)
+    client.join()
+    stdout = ""
+    for host_output in output:
+        stdout_li = list(host_output.stdout)
+        for line in stdout_li:
+            stdout += line + "\n"
 
-        # Initialise
-        session = Session()
-        session.handshake(sock)
+    print("output", stdout)
+    return stdout
 
-        session.userauth_password(user, password)
 
-        # Public key blob available as identities[0].blob
-
-        # Channel initialise, exec and wait for end
-        channel = session.open_session()
-        channel.execute(command)
-        channel.wait_eof()
-        channel.close()
-        channel.wait_closed()
-
-        # Print output
-        output = b''
-        size, data = channel.read()
-        while size > 0:
-            output += data
-            size, data = channel.read()
-
-        # Get exit status
-        output = output.decode("utf-8").strip()
-    except socket.gaierror as ex:
-        logging.error(ex)
-        return None, ex.errno
-    #print(f'{host}, {output}, {channel.get_exit_status()}')
-    return output, channel.get_exit_status()
-
+def ssh_client(host, user, password, command):
+    return parallel_ssh(host, user, password, command)
 
 if __name__ == "__main__":
-    o = ssh2_ssh("localhost", port=22, user="cnoam", password="hhh", command="ls")
-    # print(o)
+    o = parallel_ssh("localhost", user="cnoam", password="", command="ls /")
+    print(o)

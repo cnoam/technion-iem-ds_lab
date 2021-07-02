@@ -22,5 +22,5 @@ urllib3==1.26.6
 Werkzeug==2.0.1
 flask_login
 #flask_simpleldap==1.4.0
-ssh2-python~=0.26.0
+parallel-ssh==2.5.4
 
