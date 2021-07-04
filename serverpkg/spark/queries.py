@@ -44,7 +44,7 @@ def get_appId_from_batchId( url: str,  livy_pass: str, batch_id: int) -> str:
     :param url:
     :param batch_id:
     :return:
-    :raise: requests.exceptions
+    :raise: requests.exceptions, ConnectionError, SparkError
     """
     q = f"/livy/batches/{batch_id}"
     h = {"X-Requested-By": "admin" , "Content-Type": "application/json"}
@@ -52,12 +52,13 @@ def get_appId_from_batchId( url: str,  livy_pass: str, batch_id: int) -> str:
     auth = HTTPBasicAuth('admin', livy_pass)
     try:
         reply=requests.get(url=url+"/"+q, headers=h, auth=auth, timeout=10.0)
+        if reply.status_code != HTTPStatus.OK:
+            raise SparkError("NOT FOUND")
     except requests.exceptions.SSLError as ex:
         raise ConnectionError('')
-    import simplejson
     try:
         j = reply.json()
-    except (TypeError, simplejson.errors.JSONDecodeError):
+    except json.JSONDecodeError:
         raise SparkError("response is not json")
     return j["appId"]
 
