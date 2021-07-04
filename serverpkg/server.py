@@ -275,16 +275,40 @@ def get_spark_logs():
     """ get the logs from an application running in spark server.
     This is a prototype quality code -- hardcoded everything"""
     appId=request.args.get('appId') # application_1624861312520_0009
-    if appId is None:
-        return "use ?appId=application_1624861312520_0009", HTTPStatus.BAD_REQUEST
-    match = re.findall(r"^application_\d{13}_\d{4}$", appId)
-    if match is None or len(match) != 1:
-        return "use ?appId=application_1624861312520_0009", HTTPStatus.BAD_REQUEST
+    batchId=request.args.get('batchId') # 42
+
     cluster_name = os.getenv('SPARK_CLUSTER_NAME')
-    cluster_url_name = f"{cluster_name}-ssh.azurehdinsight.net"
+    livy_password = os.getenv('LIVY_PASS')
+    cluster_url_name = f"https://{cluster_name}.azurehdinsight.net"
+    cluster_url_ssh_name = f"{cluster_name}-ssh.azurehdinsight.net"
     if cluster_name is None:
-        return "Internal Error: missing SPARK_CLUSTER_URL env var in the server", HTTPStatus.INTERNAL_SERVER_ERROR
-    return queries.get_logs(cluster_url_name,appId)
+        return "Internal Error: missing SPARK_CLUSTER_NAME env var in the server", HTTPStatus.INTERNAL_SERVER_ERROR
+    if livy_password is None:
+        return "Internal Error: missing LIVY_PASS env var in the server", HTTPStatus.INTERNAL_SERVER_ERROR
+    if appId is None and batchId is None:
+        return "use ?appId=application_1624861312520_0009 or ?batchId=4", HTTPStatus.BAD_REQUEST
+
+    try:
+        if batchId:
+            try:
+                batchId = int(batchId)
+            except ValueError:
+                return "batch Id must be integer", HTTPStatus.BAD_REQUEST
+            appId = queries.get_appId_from_batchId(cluster_url_name, livy_password, batchId)
+            if appId is None:
+                return f"There is no AppId yet for batch {batchId}. Please try again later", HTTPStatus.OK
+
+        match = re.findall(r"^application_\d{13}_\d{4}$", appId)
+        if match is None or len(match) != 1:
+            return "use ?appId=application_1624861312520_0009", HTTPStatus.BAD_REQUEST
+
+        response =  queries.get_logs(cluster_url_ssh_name,appId)
+    except queries.ConnectionError:
+        return "Could not connect to the Spark server", HTTPStatus.BAD_GATEWAY
+    except queries.SparkError as ex:
+        return "Spark server returned unexpected value or did not find the requested batch:  "+ str(ex), HTTPStatus.NOT_FOUND
+    return response
+
 
 def handle_file(package_under_test,course_number, ex_type, ex_number, reference_input, reference_output, completionCb):
     """Send the file to execution. If async, return immediately"""

@@ -1,9 +1,16 @@
+import json
 from http import HTTPStatus
 import pssh
+import requests
+from requests.auth import HTTPBasicAuth
+
 import utils
 from .ssh_client import ssh_client
 from serverpkg.logger import Logger
 logger = Logger(__name__).logger
+
+class ConnectionError(Exception): pass
+class SparkError(Exception):pass
 
 
 def get_logs(cluster_url_name, appId):
@@ -31,11 +38,38 @@ def get_logs(cluster_url_name, appId):
     return utils.wrap_html_source(output), HTTPStatus.OK
 
 
+def get_appId_from_batchId( url: str,  livy_pass: str, batch_id: int) -> str:
+    """
+
+    :param url:
+    :param batch_id:
+    :return:
+    :raise: requests.exceptions
+    """
+    q = f"/livy/batches/{batch_id}"
+    h = {"X-Requested-By": "admin" , "Content-Type": "application/json"}
+
+    auth = HTTPBasicAuth('admin', livy_pass)
+    try:
+        reply=requests.get(url=url+"/"+q, headers=h, auth=auth, timeout=10.0)
+    except requests.exceptions.SSLError as ex:
+        raise ConnectionError('')
+    import simplejson
+    try:
+        j = reply.json()
+    except (TypeError, simplejson.errors.JSONDecodeError):
+        raise SparkError("response is not json")
+    return j["appId"]
+
 if __name__ == "__main__":
-   cluster_url_name="noam-spark-ssh.azurehdinsight.net"
+   cluster_url_name="https://noam-spark.azurehdinsight.net"
+   passwd = "%Qq12345678"
+   print(get_appId_from_batchId(cluster_url_name, passwd, 4) )
+
    appId="application_1625220040852_0008"
+
    print("calling get_logs({},{})".format(cluster_url_name,appId))
    x = get_logs(cluster_url_name,appId)
-   print("returned\n",x)
+   print("returned\n", passwd, x)
 
 
