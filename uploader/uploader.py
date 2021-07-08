@@ -119,9 +119,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", help="hostname of the server")
-    parser.add_argument("file", help="input file name (ZIP)")
-    parser.add_argument("ex_num", help="exercise number (e.g. 3)")
-    parser.add_argument("course", help="course ID number (e.g. 94219)")
+    parser.add_argument("--file", help="input file name (ZIP)")
+    parser.add_argument("--ex_num", help="exercise number (e.g. 3)")
+    parser.add_argument("--course", help="course ID number (e.g. 94219)")
     args = parser.parse_args()
 
     path_to_zip_file = args.file
