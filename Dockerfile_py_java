@@ -1,0 +1,8 @@
+# to build:
+# docker build -t py_java_base -f Dockerfile_py_java_base .
+FROM  python_base:latest
+
+# Oracle keeps changing their site, so the old command stopped working. 
+# checkg this :
+# https://devopsmyway.com/download-latest-version-of-javajdk-from-linux-terminal/
+

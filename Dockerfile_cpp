@@ -1,0 +1,21 @@
+# Build an image based on the Checker code + C++ support
+
+FROM  python_base
+MAINTAINER Noam Cohen "cnoam@technion.ac.il"
+RUN apt-get update -y && \
+ apt-get install -y build-essential && \
+ apt-get install -y cmake g++
+
+
+# upgrade cmake 
+WORKDIR /tmp
+ADD https://github.com/Kitware/CMake/releases/download/v3.14.2/cmake-3.14.2-Linux-x86_64.sh  /tmp
+RUN  chmod +x cmake-3.14.2-Linux-x86_64.sh && ./cmake-3.14.2-Linux-x86_64.sh --skip-license && rm cmake-3.14.2-Linux-x86_64.sh
+ENV PATH="/tmp/bin:${PATH}"
+
+
+WORKDIR /app
+EXPOSE 8000
+
+CMD ["gunicorn", "-b", "0.0.0.0:8000", "--workers", "3", "serverpkg.server:app"]
+

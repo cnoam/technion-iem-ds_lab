@@ -1,0 +1,24 @@
+# Build an image of the homework Checker 
+#
+# to build:
+# docker build -t python_base -f Dockerfile_base .
+
+FROM  python:3.6-stretch
+MAINTAINER Noam Cohen "cnoam@technion.ac.il"
+
+# add /usr/bin/time since the bash version is not good for my needs
+# for some obscure reason, Docker does not copy from the absolute path
+# so BEFORE running it, I "cp /usr/bin/time ."
+COPY  ./time /usr/bin/time
+RUN apt-get update && apt-get install -y jq   # jq is needed for spark batching
+
+COPY requirements.txt .
+RUN pip3 install -r requirements.txt && rm requirements.txt
+COPY serverpkg /app/serverpkg/
+COPY utils.py time /app/
+
+WORKDIR /app
+EXPOSE 8000
+
+CMD ["gunicorn", "-b", "0.0.0.0:8000", "--workers", "3", "serverpkg.server:app"]
+

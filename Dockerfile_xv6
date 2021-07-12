@@ -1,0 +1,11 @@
+# build an image for homework on XV6 educational operating system.
+# This is built on top of the Checker code
+
+FROM  server_cpp
+
+RUN apt-get update && apt-get install -y qemu
+
+WORKDIR /app
+EXPOSE 8000
+CMD ["gunicorn", "-b", "0.0.0.0:8000", "--workers", "3", "serverpkg.server:app"]
+
