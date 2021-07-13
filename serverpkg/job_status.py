@@ -32,6 +32,7 @@ class Job():
     def from_tuple( value):
         j = Job(0, 'dummy', 'dummy')
         (j.job_id ,
+         j.course_id,
          j.status,
          j.run_time ,
          j.stdout ,
@@ -56,6 +57,7 @@ class Job():
     def JobSqlSchema():
         """return the SQL string to generate a table with the attributes"""
         return """job_id     integer PRIMARY KEY,
+                  known_course_id  integer,
                   status     text NOT NULL,
                   run_time   real,
                   stdout     text,
@@ -69,16 +71,19 @@ class Job():
                   """
 
     def to_tuple(self):
-        return (self.job_id, self.status.name, self.run_time, self.stdout, self.stderr, self.exit_code, self.start_time,
+        return (self.job_id, self.course_id, self.status.name, self.run_time, self.stdout, self.stderr, self.exit_code, self.start_time,
                 self.comparator_file_name, self.executor_file_name, self.exercise_name, self.filename)
 
-    def __init__(self, exercise_name, filename,job_id=None):
+    def __init__(self, course_id, exercise_name, filename,job_id=None):
         """
+        :param course_id integer key of the course, e.g. 94210
+        :param exercise_name assignment ID in the course, e.g. 2
         :param job_id: job ID (unique value)
         :param filename: <string> file name to check, in the format [optional prefix]nnnnnn_mmmmmm.tar.gz
         """
         self.status = Job.Status.pending
         self.job_id = job_id
+        self.course_id = course_id
         self.run_time = None  # will hold the duration
         self.stdout = None
         self.stderr = None
@@ -108,7 +113,8 @@ class Job():
     #     self.stderr = stderr
 
     def __str__(self):
-        s = "{id} {stat} . \t".format(id = self.job_id, stat=self.status)
+        s = "course {cid}, assignment {ex_id}, job {id} {stat} . \t".format(cid = self.course_id,
+                                                ex_id = self.exercise_name, id = self.job_id, stat=self.status)
         if self.run_time is not None:
             s += "runtime={:.3f} sec.".format(self.run_time)
         if self.exit_code is not None:
@@ -207,7 +213,7 @@ class JobStatusDB():
         :return: job id : int
         """
         with sqlite3.connect(self.db_file_name) as conn:
-            cur =conn.execute("INSERT INTO jobs VALUES (?,?,?,?,?,?,?,?,?,?,?)", job.to_tuple())
+            cur =conn.execute("INSERT INTO jobs VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", job.to_tuple())
             id = cur.lastrowid
             job.job_id = id
         return job.job_id
@@ -240,10 +246,11 @@ class JobStatusDB():
 
     def add_job(self, ex_type_name:tuple, package_file_name) -> Job:
         """Create a new job object, give it ID, put it in the db
+        :param ex_type_name tuple (known_course_id, ex_type, ex_ID)
         :return the new Job object
         """
         assert isinstance(ex_type_name, tuple)
-        a_job = Job(ex_type_name[1], filename=package_file_name)
+        a_job = Job(course_id= ex_type_name[0], exercise_name=ex_type_name[2], filename=package_file_name)
         self.insert_to_db(a_job)
         return a_job
 

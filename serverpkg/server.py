@@ -135,8 +135,14 @@ def show_jobs_():
     create a nice table with all the jobs past and present
     :return: html page
     """
+    x = _job_status_db.jobs()
     return show_jobs.show_jobs(_job_status_db)
 
+@app.route('/<int:course_id>/jobs')
+def show_jobs_for_course(course_id):
+    if str(course_id) not in known_course_id:
+        return "no such course", HTTPStatus.NOT_FOUND
+    return show_jobs.show_jobs(_job_status_db, lambda x: x.course_id == course_id, "course %d" % course_id)
 
 # noinspection PyPackageRequirements
 @app.route('/<int:course>/submit/<ex_type>/<int:number>', methods=['GET', 'POST'])
@@ -236,7 +242,7 @@ def get_job_stat(job_id):
 
 @app.route('/<int:course>/leaderboard')
 def show_leaderboard(course):
-    if not str(course) in course_id:
+    if not str(course) in known_course_id:
         return "course not found", HTTPStatus.NOT_FOUND
     from .leaderboard import Leaderboard
     board = Leaderboard(_job_status_db)
@@ -417,7 +423,7 @@ def handle_file_async(package_under_test, course_number, ex_type, ex_number, ref
     :param reference_output: 
     :return: html page showing link to the tracking page
     """
-    new_job = _job_status_db.add_job((ex_type, ex_number),package_under_test)
+    new_job = _job_status_db.add_job((course_number, ex_type, ex_number),package_under_test)
     try:
         config = _get_config_for_ex(course_number, ex_type, ex_number)
     except KeyError as ex:
@@ -475,7 +481,7 @@ def _purge_db_stale_jobs():
 
 
 try:
-    course_id = _get_configured_course_ids()
+    known_course_id = _get_configured_course_ids()
 except FileNotFoundError:
     logger.fatal("Configuration file not found. Check permissions and name")
 
