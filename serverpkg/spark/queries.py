@@ -3,7 +3,7 @@ from http import HTTPStatus
 import pssh
 import requests
 from requests.auth import HTTPBasicAuth
-
+from pssh import exceptions
 import utils
 from .ssh_client import ssh_client
 from serverpkg.logger import Logger
@@ -32,6 +32,9 @@ def get_logs(cluster_url_name, appId):
     except pssh.exceptions.UnknownHostError as ex:
         print("SSH receive error" + str(ex))
         return utils.wrap_html_source(str(ex)), HTTPStatus.SERVICE_UNAVAILABLE
+    except pssh.exceptions.AuthenticationError as ex:
+        print("SSH connection error" + str(ex))
+        return utils.wrap_html_source(str(ex)), HTTPStatus.SERVICE_UNAVAILABLE
     except Exception as ex:
         return utils.wrap_html_source(str(ex)), HTTPStatus.INTERNAL_SERVER_ERROR
 
@@ -53,9 +56,9 @@ def get_appId_from_batchId( url: str,  livy_pass: str, batch_id: int) -> str:
     try:
         reply=requests.get(url=url+"/"+q, headers=h, auth=auth, timeout=10.0)
         if reply.status_code != HTTPStatus.OK:
-            raise SparkError("NOT FOUND")
+            raise SparkError("batch ID NOT FOUND")
     except requests.exceptions.SSLError as ex:
-        raise ConnectionError('')
+        raise ConnectionError(str(ex))
     try:
         j = reply.json()
     except json.JSONDecodeError:
