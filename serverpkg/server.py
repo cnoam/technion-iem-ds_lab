@@ -21,6 +21,10 @@ from . import show_jobs, job_status
 def _configure_app():
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
     data_path = os.environ['CHECKER_DATA_DIR']
+
+    # strip trailing '/' if there is one
+    if data_path[-1] == '/':
+        data_path = data_path[0:-1]
     app.config['data_dir'] = data_path + '/data'
     app.config['matcher_dir'] = data_path + '/matchers'
     app.config['runner_dir'] = data_path + '/runners'
@@ -127,6 +131,13 @@ def index():
 def get_server_status():
     import json
     return json.dumps({'num_jobs': _job_status_db.num_running_jobs()})
+
+
+@app.route('/status/azure', methods=['GET'])
+def get_azure_status():
+    import serverpkg.spark.azure_health as az
+    import json
+    return json.dumps({'azcopy upload': 'success' if az.check_azcopy() else 'fail'} )
 
 
 @app.route('/jobs')
