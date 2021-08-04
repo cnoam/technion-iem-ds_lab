@@ -313,7 +313,7 @@ def get_spark_logs():
         if match is None or len(match) != 1:
             return "use ?appId=application_1624861312520_0009", HTTPStatus.BAD_REQUEST
 
-        response =  queries.get_logs(cluster_url_ssh_name,appId)
+        response =  queries.get_logs(cluster_url_ssh_name, livy_password, appId)
     except queries.ConnectionError:
         return "Could not connect to the Spark server", HTTPStatus.BAD_GATEWAY
     except queries.SparkError as ex:

@@ -13,7 +13,7 @@ class ConnectionError(Exception): pass
 class SparkError(Exception):pass
 
 
-def get_logs(cluster_url_name, appId):
+def get_logs(cluster_url_name, passwd, appId):
     """ get the logs of the application from the Spark cluster.
         This function uses YARN log aggregation.
 
@@ -22,7 +22,6 @@ def get_logs(cluster_url_name, appId):
     :return: tuple (reply body, HTTP status code)
     """
     # yarn logs  -am -1    -log_files stdout -applicationId application_1624861312520_0009
-    passwd = "%Qq12345678"
 
     # get the log of stdout from the last run from this appId
     cmd = f"yarn logs  -am -1 -log_files stdout -applicationId {appId}"
@@ -30,7 +29,7 @@ def get_logs(cluster_url_name, appId):
     try:
         output = ssh_client(host=cluster_url_name, user="sshuser", password=passwd, command=cmd)
     except pssh.exceptions.UnknownHostError as ex:
-        print("SSH receive error" + str(ex))
+        logger.error("SSH receive error" + str(ex))
         return utils.wrap_html_source(str(ex)), HTTPStatus.SERVICE_UNAVAILABLE
     except pssh.exceptions.AuthenticationError as ex:
         print("SSH connection error" + str(ex))
@@ -62,18 +61,20 @@ def get_appId_from_batchId( url: str,  livy_pass: str, batch_id: int) -> str:
     try:
         j = reply.json()
     except json.JSONDecodeError:
+        logger.error("get_appId_from_batchId: response is not json")
         raise SparkError("response is not json")
+    logger.info("appid=%s, batchId=%d"%( j["appId"], batch_id))
     return j["appId"]
 
-if __name__ == "__main__":
+
+def test():
    cluster_url_name="https://noam-spark.azurehdinsight.net"
+   cluster_ssh_url_name = "noam-spark-ssh.azurehdinsight.net"
    passwd = "%Qq12345678"
-   print(get_appId_from_batchId(cluster_url_name, passwd, 4) )
-
-   appId="application_1625220040852_0008"
-
+   appId = get_appId_from_batchId(cluster_url_name, passwd, 33)
    print("calling get_logs({},{})".format(cluster_url_name,appId))
-   x = get_logs(cluster_url_name,appId)
-   print("returned\n", passwd, x)
+   x = get_logs(cluster_ssh_url_name,passwd, appId)
+   print("returned\n", x)
 
-
+if __name__ == "__main__":
+    test()
