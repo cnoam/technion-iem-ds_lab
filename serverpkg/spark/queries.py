@@ -22,7 +22,7 @@ def get_logs(cluster_url_ssh_name, passwd, appId):
     :return: tuple (reply body, HTTP status code)
     """
     # yarn logs  -am -1    -log_files stdout -applicationId application_1624861312520_0009
-    cluster_url_ssh_name = cluster_url_ssh_name +"gg"
+    cluster_url_ssh_name = cluster_url_ssh_name
     # get the log of stdout from the last run from this appId
     cmd = f"yarn logs  -am -1 -log_files stdout -applicationId {appId}"
     logger.info(f"connecting using SSH to Spark node {cluster_url_ssh_name}")
