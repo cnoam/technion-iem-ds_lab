@@ -184,8 +184,10 @@ class JobStatusDB():
             os.mkdir(self.db_dir_name)
         except FileExistsError:
             pass
+        except FileNotFoundError as ex:
+            logger.fatal(ex)
         except PermissionError:
-            logger.error("Permission denied when trying to create the DB directory")
+            logger.fatal("Permission denied when trying to create the DB directory")
             raise
         try:
             with sqlite3.connect(self.db_file_name) as conn:

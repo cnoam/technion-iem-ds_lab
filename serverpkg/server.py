@@ -277,6 +277,44 @@ def show_diff(courseId):
         return "job ID not found", HTTPStatus.NOT_FOUND
     return show_html_diff(courseId, job, first)
 
+@app.route('/spark/delete', methods=['GET'])
+def delete_spark_batch():
+    """ the URL format is /spark/delete<batch-id>
+    WARNING: no authentication is done here!"""
+    import re
+    from serverpkg.spark import queries
+    return "not impl", 404
+    batchId = request.args.get('batchId')  # 42
+
+    cluster_name = os.getenv('SPARK_CLUSTER_NAME')
+    livy_password = os.getenv('LIVY_PASS')
+    cluster_url_name = f"https://{cluster_name}.azurehdinsight.net"
+    if cluster_name is None:
+        return "Internal Error: missing SPARK_CLUSTER_NAME env var in the server", HTTPStatus.INTERNAL_SERVER_ERROR
+    if livy_password is None:
+        return "Internal Error: missing LIVY_PASS env var in the server", HTTPStatus.INTERNAL_SERVER_ERROR
+    if batchId is None:
+        return "use ?batchId=4", HTTPStatus.BAD_REQUEST
+    try:
+        try:
+            batchId = int(batchId)
+        except ValueError:
+            return "batch Id must be integer", HTTPStatus.BAD_REQUEST
+        appId = queries.get_appId_from_batchId(cluster_url_name, livy_password, batchId)
+        if appId is None:
+            return f"There is no AppId yet for batch {batchId}. Please try again later", HTTPStatus.OK
+
+        match = re.findall(r"^application_\d{13}_\d{4}$", appId)
+        if match is None or len(match) != 1:
+            return "use ?appId=application_1624861312520_0009", HTTPStatus.BAD_REQUEST
+
+        response = queries.delete_batch(cluster_url_name, livy_password, batchId)
+    except queries.ConnectionError:
+        return "Could not connect to the Spark server", HTTPStatus.BAD_GATEWAY
+    except queries.SparkError as ex:
+        return "Spark server returned unexpected value or did not find the requested batch:  " + str(
+            ex), HTTPStatus.NOT_FOUND
+    return response
 
 
 @app.route('/spark/logs')
