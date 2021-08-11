@@ -285,11 +285,10 @@ def show_diff(courseId):
 
 @app.route('/spark/delete', methods=['GET'])
 def delete_spark_batch():
-    """ the URL format is /spark/delete<batch-id>
+    """ the URL format is /spark/delete?batchId=<batch-id>
     WARNING: no authentication is done here!"""
     import re
     from serverpkg.spark import queries
-    return "not impl", 404
     batchId = request.args.get('batchId')  # 42
 
     cluster_name = os.getenv('SPARK_CLUSTER_NAME')
@@ -320,7 +319,7 @@ def delete_spark_batch():
     except queries.SparkError as ex:
         return "Spark server returned unexpected value or did not find the requested batch:  " + str(
             ex), HTTPStatus.NOT_FOUND
-    return response
+    return ("job deleted" if response.status_code == HTTPStatus.OK else "failed deleting the job" + response.text), response.status_code
 
 
 @app.route('/spark/logs')
