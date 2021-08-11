@@ -17,6 +17,7 @@ import subprocess
 from .asyncChecker import AsyncChecker
 from . import show_jobs, job_status
 
+running_spark_jobs = {} # HACK: this is lame, since data will not persist between restarts. Should be in a db/file
 
 def _configure_app():
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
@@ -49,6 +50,11 @@ class _HttpStatusError(Exception):
 
 
 def allowed_file(filename):
+    import re
+    matches = re.findall('^\d{8,9}(_\d{8,9})?(_\d{8,9})?.py', filename)
+    ok = len(matches) > 0
+    logger.info("allowed_file: filename " + ('OK' if ok else 'rejected'))
+    return ok
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -363,6 +369,32 @@ def handle_file(package_under_test,course_number, ex_type, ex_number, reference_
     """Send the file to execution. If async, return immediately"""
 
     use_async = True
+
+    # HACK
+    if course_number == 96224:
+        # '/tmp/tmpfu0d54qs/58708389_111111111_66666666.py'  -> '58708389_111111111_66666666.py'
+        sender = package_under_test[package_under_test.rfind('/') + 1:]
+        # we allow a single job to run, so if user uploads another file (with the same name), we first kill the older job
+        # this should be done async since asking spark to kill a job takes a long time.
+        if sender in running_spark_jobs:
+            from serverpkg.spark.queries import delete_batch
+            cluster_name = os.getenv('SPARK_CLUSTER_NAME')
+            livy_password = os.getenv('LIVY_PASS')
+            cluster_url_name = f"https://{cluster_name}.azurehdinsight.net"
+            batch_id = running_spark_jobs[sender]
+            response = delete_batch(cluster_url_name=cluster_url_name, livy_password=livy_password, batchId=batch_id )
+            if response.status_code == HTTPStatus.OK:
+                # upon succesful completion, remove that batch id, and only then we can add to the dict the batchId of the new job.
+                # or use a set ?
+                running_spark_jobs.pop(batch_id)
+            else:
+                logger.warning(f"Deleting batch {batch_id} failed. response:{str(response)}")
+
+        # we need the batch ID which is available only when the async call will finish so chain the callbacks
+        from serverpkg.spark import SparkCallback
+        s = SparkCallback.SparkCallback(sender=sender, running_jobs=running_spark_jobs, cb=completionCb)
+        completionCb = s
+
     if use_async:
         return handle_file_async(package_under_test, course_number, ex_type, ex_number, reference_input, reference_output,completionCb)
     else:

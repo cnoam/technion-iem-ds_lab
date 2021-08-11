@@ -45,7 +45,8 @@ def delete_batch(cluster_url_name, livy_password, batchId):
      Use Livy HTTP DELETE command"""
     logger.info(f"Going to delete batch {batchId}")
     response = requests.delete(f"{cluster_url_name}/livy/batches/{batchId}",
-                               auth=HTTPBasicAuth('admin', password=livy_password))
+                               auth=HTTPBasicAuth('admin', password=livy_password),
+                               headers = {'X-Requested-By': 'admin'})
     if response.status_code != HTTPStatus.OK:
         logger.warning("Delete batch:" + str(response.content))
     return response

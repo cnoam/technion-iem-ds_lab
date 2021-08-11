@@ -120,7 +120,7 @@ class AsyncChecker(threading.Thread):
                                            )
 
             if self.completion_cb is not None:
-                self.completion_cb()
+                self.completion_cb({'stdout': out, 'exit_code': exit_code})
         logger.info("thread {} exiting".format(self.getName()))
 
 
