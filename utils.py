@@ -24,6 +24,18 @@ def measure(func):
     return _time_it
 
 
+def commitId() -> str:
+    """ try to get the current git commit Id
+    :return short commit ID or empty string"""
+    import subprocess
+    id = ''
+    completed_proc = subprocess.run(['bash', '-c','git rev-parse --short HEAD'],
+                                    check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+    if completed_proc.returncode == 0:
+        id = completed_proc.stdout.decode()
+    return id
+
+
 if __name__ == "__main__":
 
     @measure
