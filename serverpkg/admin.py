@@ -139,3 +139,11 @@ def get_job_results():
     resp = make_response(csv_output)
     resp.headers['Content-Type'] = 'text/plain'
     return resp
+
+
+@app.route("/spark/running_jobs", methods=['GET'])
+def get_spark_batch_list():
+    import pprint
+    pp = pprint.PrettyPrinter()
+    from .server import running_spark_jobs
+    return pp.pformat(running_spark_jobs)
