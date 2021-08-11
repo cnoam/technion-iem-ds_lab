@@ -385,7 +385,7 @@ def handle_file(package_under_test,course_number, ex_type, ex_number, reference_
             if response.status_code == HTTPStatus.OK:
                 # upon succesful completion, remove that batch id, and only then we can add to the dict the batchId of the new job.
                 # or use a set ?
-                running_spark_jobs.pop(batch_id)
+                running_spark_jobs.pop(sender)
             else:
                 logger.warning(f"Deleting batch {batch_id} failed. response:{str(response)}")
 

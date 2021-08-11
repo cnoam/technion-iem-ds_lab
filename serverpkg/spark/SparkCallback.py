@@ -33,7 +33,7 @@ class SparkCallback:
     def _parse_batch_id(self, stdout_str ):
         """look for text like  BATCH ID = 666  """
         import re
-        matches = re.findall('^BATCH ID = (\d+)', stdout_str)
+        matches = re.findall('^BATCH ID = (\d+)', stdout_str, flags=re.MULTILINE)
         if len(matches) == 0:
             logging.warning("batch ID not found in stdout")
         else:
