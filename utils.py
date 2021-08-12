@@ -24,6 +24,14 @@ def measure(func):
     return _time_it
 
 
+def version_string() -> str:
+    """ Ideally we would read the git commit ID,
+    but it is not available when running in the docker container.
+    """
+    # import version
+    return "unknown" # version.__version__
+
+
 if __name__ == "__main__":
 
     @measure
