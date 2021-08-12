@@ -52,4 +52,15 @@ class Logger:
         # verify path is writable
         tmp = open(self.log_path+"/test","w") # should raise if there is an error
         tmp.close()
-        os.unlink(self.log_path+"/test")
+        try:
+            os.unlink(self.log_path+"/test")
+        except FileNotFoundError:
+            # if several instances are run together (e.g. 3 by gunicorn)
+            # they will disturb each other:
+            # P1 opens, P2 opens, P1 unlink, P2 try to unlink and fails.
+            # can solve it in several ways, but the simplest is just to ignore this
+            # specific error because we don't care who deleted this file
+            #self.logger.info("Someone deleted the test file but that's ok.")
+            #raise Exception("d not ignore")
+            pass
+
