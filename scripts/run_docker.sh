@@ -11,11 +11,19 @@ set +e
 mkdir -p $CHECKER_DATA_DIR/logs
 chmod  777 $CHECKER_DATA_DIR/logs
 set -e
- docker run -d --mount type=bind,source=$CHECKER_DATA_DIR,target=/data,readonly \
- 	       --mount type=bind,source=$CHECKER_DATA_DIR/logs,target=/logs\
-	       --env CHECKER_DATA_DIR=/data \
-	       --env CHECKER_LOG_DIR=/logs \
-	       --env SPARK_CLUSTER_NAME=noam-c3 \
-         -p80:8000 \
-	       --restart unless-stopped \
-             $IMAGE
+export LIVY_PASS="%Qq12345678"
+
+# Use docker compose since we want to have Redis container for the Spark jobs
+if [ -n $IMAGE ]; then
+  echo ">>>> The argument $IMAGE is ignored!"
+fi
+docker-compose up --detach
+# docker run -d --mount type=bind,source=$CHECKER_DATA_DIR,target=/data,readonly \
+# 	       --mount type=bind,source=$CHECKER_DATA_DIR/logs,target=/logs\
+#	       --env CHECKER_DATA_DIR=/data \
+#	       --env CHECKER_LOG_DIR=/logs \
+#	       --env SPARK_CLUSTER_NAME=noam-spark \
+#         --env LIVY_PASS="%Qq12345678"\
+#         -p80:8000 \
+#	       --restart unless-stopped \
+#             $IMAGE

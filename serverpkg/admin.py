@@ -3,6 +3,8 @@ Admin pages are placed in this module.
 It is loaded from the server module.
 """
 from http import HTTPStatus
+
+import redis
 from flask import render_template, request, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required
 from werkzeug.utils import redirect
@@ -144,6 +146,7 @@ def get_job_results():
 @app.route("/spark/running_jobs", methods=['GET'])
 def get_spark_batch_list():
     import pprint
-    pp = pprint.PrettyPrinter()
-    from .server import running_spark_jobs
-    return pp.pformat(running_spark_jobs)
+    try:
+        return pprint.pformat(app.config['running_spark_jobs'].items(), indent=3, width=20)
+    except redis.exceptions.ConnectionError:
+        return "This data is currently not available",500

@@ -4,6 +4,8 @@ This is because we run the call in a subprocess.
 """
 import logging
 
+import redis.exceptions
+
 
 class SparkCallback:
     def __init__(self, sender, running_jobs, cb=None):
@@ -26,7 +28,10 @@ class SparkCallback:
         if exit_code == 0:
             self._parse_batch_id(stdout_str=stdout_s)
             # add the new batch_id only if success
-            self.db[self.source] = self.batch_id
+            try:
+                self.db.add(self.source,self.batch_id)
+            except redis.exceptions.RedisError as ex:
+                logging.error("Failed writing to redis:"  + str(ex))
         if self.next_cb:
             self.next_cb()
 

@@ -3,6 +3,8 @@
 import os
 import sys
 
+import redis.exceptions
+
 from .motd import Motd
 
 if sys.version_info.major != 3:
@@ -17,7 +19,7 @@ import subprocess
 from .asyncChecker import AsyncChecker
 from . import show_jobs, job_status
 
-running_spark_jobs = {} # HACK: this is lame, since data will not persist between restarts. Should be in a db/file
+from serverpkg.spark import RunningJobs
 
 def _configure_app():
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
@@ -38,6 +40,11 @@ def _configure_app():
     # app.config['LDAP_PASSWORD'] = '--'
     app.secret_key = b'3456o00sdf045'
 
+    #HACK: this should be data memeber of class Server
+    app.config['running_spark_jobs'] = RunningJobs.RunningJobs()
+
+    # the name 'redis' is the host name of the Redis server. This is set in the docker compose file
+    app.config['running_spark_jobs'].connect_redis('redis', port=6379)
 
 class SanityError(Exception):
     pass
@@ -130,7 +137,9 @@ def unauthorized_message(e):
 # ---------------------------------
 @app.route('/',methods = ['GET'])
 def index():
-    return render_template('index.html', running_locally=_running_on_dev_machine(),  motd = Motd().get_message())
+    import utils
+    footer_text = 'commit id: {}'.format(utils.version_string())
+    return render_template('index.html', running_locally=_running_on_dev_machine(),  motd = Motd().get_message(), footer= footer_text)
 
 
 @app.route('/status', methods=['GET'])
@@ -351,7 +360,7 @@ def get_spark_logs():
             appId = queries.get_appId_from_batchId(cluster_url_name, livy_password, batchId)
             if appId is None:
                 return f"There is no AppId yet for batch {batchId}. Please try again later", HTTPStatus.OK
-
+            logger.info(f"batchId:{batchId} -> AppID: {appId}")
         match = re.findall(r"^application_\d{13}_\d{4}$", appId)
         if match is None or len(match) != 1:
             return "use ?appId=application_1624861312520_0009", HTTPStatus.BAD_REQUEST
@@ -375,20 +384,23 @@ def handle_file(package_under_test,course_number, ex_type, ex_number, reference_
         sender = package_under_test[package_under_test.rfind('/') + 1:]
         # we allow a single job to run, so if user uploads another file (with the same name), we first kill the older job
         # this should be done async since asking spark to kill a job takes a long time.
-        if sender in running_spark_jobs:
-            from serverpkg.spark.queries import delete_batch
-            cluster_name = os.getenv('SPARK_CLUSTER_NAME')
-            livy_password = os.getenv('LIVY_PASS')
-            cluster_url_name = f"https://{cluster_name}.azurehdinsight.net"
-            batch_id = running_spark_jobs[sender]
-            response = delete_batch(cluster_url_name=cluster_url_name, livy_password=livy_password, batchId=batch_id )
-            if response.status_code == HTTPStatus.OK:
-                # upon succesful completion, remove that batch id, and only then we can add to the dict the batchId of the new job.
-                # or use a set ?
-                running_spark_jobs.pop(sender)
-            else:
-                logger.warning(f"Deleting batch {batch_id} failed. response:{str(response)}")
-
+        running_spark_jobs=app.config['running_spark_jobs']
+        try:
+            if sender in running_spark_jobs.keys():
+                from serverpkg.spark.queries import delete_batch
+                cluster_name = os.getenv('SPARK_CLUSTER_NAME')
+                livy_password = os.getenv('LIVY_PASS')
+                cluster_url_name = f"https://{cluster_name}.azurehdinsight.net"
+                batch_id = running_spark_jobs.get(sender)
+                response = delete_batch(cluster_url_name=cluster_url_name, livy_password=livy_password, batchId=batch_id )
+                if response.status_code == HTTPStatus.OK:
+                    # upon succesful completion, remove that batch id, and only then we can add to the dict the batchId of the new job.
+                    # or use a set ?
+                    running_spark_jobs.pop(sender)
+                else:
+                    logger.warning(f"Deleting batch {batch_id} failed. response:{str(response)}")
+        except redis.exceptions.RedisError as ex:
+            logger.error("Problem accessing redis. Skipping updating of jobs. %s" % str(ex))
         # we need the batch ID which is available only when the async call will finish so chain the callbacks
         from serverpkg.spark import SparkCallback
         s = SparkCallback.SparkCallback(sender=sender, running_jobs=running_spark_jobs, cb=completionCb)
