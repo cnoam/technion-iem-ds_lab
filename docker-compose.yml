@@ -1,0 +1,31 @@
+# note: to see the actual configuration, run
+# docker-compose config
+#
+# To open a shell in a running container (== service):
+# docker-compose exec homework-checker sh
+#
+version: "3.3"
+services:
+  homework-checker:
+    image: server
+    hostname: checker
+    ports:
+      - "80:8000"
+    environment:
+      - "CHECKER_DATA_DIR=/data"
+      - "CHECKER_LOG_DIR=/logs"
+      - "SPARK_CLUSTER_NAME=noam-spark"
+      - "LIVY_PASS=$LIVY_PASS"
+    volumes:
+      - type: bind
+        source: $CHECKER_DATA_DIR
+        target: /data
+        read_only: true
+      - type: bind
+        source: $CHECKER_DATA_DIR/logs
+        target: /logs
+
+  redis:
+    image: redis
+    ports:
+      - "6379"
