@@ -50,11 +50,11 @@ class _HttpStatusError(Exception):
 
 
 def allowed_file(filename):
-    import re
-    matches = re.findall('^\d{8,9}(_\d{8,9})?(_\d{8,9})?.py', filename)
-    ok = len(matches) > 0
-    logger.info("allowed_file: filename " + ('OK' if ok else 'rejected'))
-    return ok
+    # import re
+    # matches = re.findall('^\d{8,9}(_\d{8,9})?(_\d{8,9})?.py', filename)
+    # ok = len(matches) > 0
+    # logger.info("allowed_file: filename " + ('OK' if ok else 'rejected'))
+    # return ok
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -253,13 +253,14 @@ def get_job_stat(job_id):
         return "job id not found", HTTPStatus.NOT_FOUND
     
 
-@app.route('/<int:course>/leaderboard')
-def show_leaderboard(course):
+@app.route('/<int:course>/<int:hw_id>/leaderboard')
+def show_leaderboard(course,hw_id):
+    """show html page of the leader board for (course, homeworkID)"""
     if not str(course) in course_id:
         return "course not found", HTTPStatus.NOT_FOUND
     from .leaderboard import Leaderboard
     board = Leaderboard(_job_status_db)
-    return board.show(str(course))
+    return board.show(str(course), ex_name=hw_id)
 
 
 # TODO this (like many others) is not related to the Server code. move to another file
@@ -513,7 +514,7 @@ def handle_file_async(package_under_test, course_number, ex_type, ex_number, ref
     async_task = AsyncChecker(_job_status_db, new_job, package_under_test,
                         reference_input, reference_output, completionCb, data_path, timeout_sec=config['timeout'])
     async_task.start()
-    return render_template('job_submitted.html', job_id= new_job.job_id)
+    return render_template('job_submitted.html', course_id=course_number, hw_id=ex_number, job_id= new_job.job_id)
 
 
 def handle_file_blocking(package_under_test, reference_input, reference_output):
@@ -550,7 +551,7 @@ def handle_file_blocking(package_under_test, reference_input, reference_output):
 def _purge_db_stale_jobs():
     """due to bugs/crashes the db table may contain jobs with status 'running'
     This will cause the server to refuse more jobs (since it believes it is full).
-    When starting the server we know for sure there are now running jobs, so purge them"""
+    When starting the server we know for sure there are no running jobs, so purge them"""
     from .job_status import Job
     _job_status_db.delete_jobs(Job.Status.running)
     _job_status_db.delete_jobs(Job.Status.pending)

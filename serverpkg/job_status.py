@@ -41,7 +41,8 @@ class Job():
          j.comparator_file_name ,
          j.executor_file_name,
          j.exercise_name,
-         j.filename) = value
+         j.filename,
+         j.score) = value
 
         # convert to status:Job.Status
         j.status = Job.Status[j.status]
@@ -65,12 +66,13 @@ class Job():
                   comparator_file_name text,
                   executor_file_name text,
                   exercise_name text,
-                  filename   text
+                  filename   text,
+                  score     integer
                   """
 
     def to_tuple(self):
         return (self.job_id, self.status.name, self.run_time, self.stdout, self.stderr, self.exit_code, self.start_time,
-                self.comparator_file_name, self.executor_file_name, self.exercise_name, self.filename)
+                self.comparator_file_name, self.executor_file_name, self.exercise_name, self.filename, self.score)
 
     def __init__(self, exercise_name, filename,job_id=None):
         """
@@ -87,6 +89,7 @@ class Job():
         self.comparator_file_name = None
         self.executor_file_name = None
         self.exercise_name = str(exercise_name) # used to identify for which exercise/lab number this job is related.
+        self.score = None
 
         matches = re.findall(r"(\d{8,9})_(\d{8,9})", filename)
         if len(matches)==0 :
@@ -113,6 +116,8 @@ class Job():
             s += "runtime={:.3f} sec.".format(self.run_time)
         if self.exit_code is not None:
             s += " exitcode={code}".format(code=self.exit_code)
+        if self.score > -1:
+            s += " score={score}".format(score=self.score)
         return s
 
     def __eq__(self, other):
@@ -209,7 +214,7 @@ class JobStatusDB():
         :return: job id : int
         """
         with sqlite3.connect(self.db_file_name) as conn:
-            cur =conn.execute("INSERT INTO jobs VALUES (?,?,?,?,?,?,?,?,?,?,?)", job.to_tuple())
+            cur =conn.execute("INSERT INTO jobs VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", job.to_tuple())
             id = cur.lastrowid
             job.job_id = id
         return job.job_id
@@ -284,7 +289,15 @@ class JobStatusDB():
         with sqlite3.connect(self.db_file_name) as conn:
             conn.execute("UPDATE jobs SET status=?, start_time=? WHERE job_id=?", (Job.Status.running.name, start_time, job_id))
 
-    def mark_job_completed(self, job_id :int, exit_code, run_time,stdout, stderr) -> None:
+    def mark_job_completed(self, job_id :int, exit_code, run_time,stdout, stderr, score) -> None:
+        """
+        Add new record to the jobdDB .
+        Using tabular data is a pain, since every time I want to add new field, the whole db has to be updated :(
+
+        :param score: integer. Higher number usually mean higher score.
+                      Used in the leaderboard. If the score is not found in the
+                      program output, use -1 .
+        """
         assert isinstance(job_id,int)
         with sqlite3.connect(self.db_file_name) as conn:
             conn.execute("UPDATE jobs \
@@ -293,9 +306,10 @@ class JobStatusDB():
             exit_code=? ,\
             run_time=? ,\
             stdout=? ,\
-            stderr=? \
+            stderr=? ,\
+            score=? \
             WHERE job_id=?", ('completed' if exit_code == 0 else 'failed',
-                              exit_code, run_time, stdout, stderr, job_id))
+                            exit_code, run_time, stdout, stderr, score, job_id))
 
     def jobs(self):
         """

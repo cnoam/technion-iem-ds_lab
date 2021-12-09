@@ -124,6 +124,7 @@ These runners are already implemented:
   - check_cmake.sh: run cmake, make and execute the executable found.
   - check_py.sh: run the file ```main.py``` in the supplied archive
    (or just this file if no archive is used)
+  - check_java_file.sh: run the file ```Main.java``` in the supplied archive
   - check_sh.sh: run the file using bash
    
      
@@ -146,8 +147,13 @@ Before writing a new one, check the existing scripts  - maybe you can use one of
     and uploading from the admin page at ```http://your-host/admin```
     <br>
     **Normally there is no need even to restart the docker container since the matcher and runner are called in a new shell for every executed test.**
-    
-    
+   
+### Ranking the submissions
+The matcher can attach a score to each submission. This score will be shown in the Leaderboard.<br>
+To add a score, add ```score=<an integer>``` to the standard output.<br>
+The server code will look for the *last* occurrence of this pattern and extract the score. 
+
+## Rebuilding the Docker image
 To rebuild the docker image and immediately run it:<br>
     
     

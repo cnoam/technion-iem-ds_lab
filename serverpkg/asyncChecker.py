@@ -27,6 +27,15 @@ def _extract_run_time(string):
 
     return times[0] + times[1]
 
+def _extract_score(string) -> int :
+    """look for 'score=number in the output of the run.
+    :returns: the score or -1 if not found"""
+    matches = re.findall("score=([0-9.]+)", string)
+    if len(matches) == 0:
+        return -1 # raise ValueError("score not found")
+    m = matches[-1]
+    return int(m)
+
 
 class AsyncChecker(threading.Thread):
 
@@ -85,6 +94,8 @@ class AsyncChecker(threading.Thread):
             try: prog_run_time = _extract_run_time(completed_proc.stderr.decode('utf-8'))
             except ValueError:
                 logger.warning("Execution time not found for this run. Ignoring it")
+
+            score = _extract_score(completed_proc.stdout.decode('utf-8'))
             exit_code=completed_proc.returncode
             run_time=prog_run_time
 
@@ -116,13 +127,13 @@ class AsyncChecker(threading.Thread):
                                            exit_code= exit_code,
                                            run_time=run_time,
                                            stdout=out,
-                                           stderr=err
+                                           stderr=err,
+                                           score=score
                                            )
 
             if self.completion_cb is not None:
                 self.completion_cb({'stdout': out, 'exit_code': exit_code})
         logger.info("thread {} exiting".format(self.getName()))
-
 
 if __name__ == "__main__":
 
