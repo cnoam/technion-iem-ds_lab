@@ -94,13 +94,14 @@ The config file json will look like:
      "runner" :"check_py.sh",
      "data_dir": "relative/path/to/DATA_DIR", <<< optional
      "timeout" : 20
+     "allowed_extension": ["py, "zip"] <<< optional, can have more than one type
     }
  ]
 }
 ```    
 
 
-
+If "allowed_extension" is empty of non-existent, any file extension can be uploaded. 
 ## Uploading data to the server
 Use ssh and put the data files  in {data-dir}/data/courseId<br>
  e.g.

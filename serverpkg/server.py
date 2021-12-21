@@ -49,14 +49,16 @@ class _HttpStatusError(Exception):
         self.status_code = status_code
 
 
-def allowed_file(filename):
+def allowed_file(filename, extensions):
     # import re
     # matches = re.findall('^\d{8,9}(_\d{8,9})?(_\d{8,9})?.py', filename)
     # ok = len(matches) > 0
     # logger.info("allowed_file: filename " + ('OK' if ok else 'rejected'))
     # return ok
+    if len(extensions) == 0:
+        return True
     return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+           filename.rsplit('.', 1)[1].lower() in extensions
 
 
 def _running_on_dev_machine():
@@ -74,8 +76,6 @@ logger = Logger(__name__).logger
 # regretably, the admin module uses _job_status_db so it can be imported only here
 from . import admin
 
-
-ALLOWED_EXTENSIONS = {'zip','gz','xz','py','sh','patch','java'} # TODO: replace with per exercise list
 MAX_CONCURRENT_JOBS = os.cpu_count()
 if MAX_CONCURRENT_JOBS is None:
     MAX_CONCURRENT_JOBS = 2  # rumored bug in getting the cpu count
@@ -160,9 +160,22 @@ def show_jobs_():
 # noinspection PyPackageRequirements
 @app.route('/<int:course>/submit/<ex_type>/<int:number>', methods=['GET', 'POST'])
 def handle_submission(course,ex_type, number):
+
+    # first, check the config for this URL
+    try:
+        config = _get_config_for_ex(course,ex_type,number)
+    except KeyError as ex:
+        return "We don't have such a value. " +  str(ex), HTTPStatus.NOT_FOUND
+    except SanityError as ex:
+        return "<H1>Message to Tutor</H1>There is something wrong in the config file for this exercise.<br>"\
+               "Please fix and submit again. <br><strong>Error: " + str(ex) + '</strong>'
+    except FileNotFoundError:
+        return "<H1>Message to Tutor</H1>The config file is not found. Deleted or access problems?<br>" , HTTPStatus.NOT_FOUND
+
+
     if request.method == 'GET':
         return render_template('upload_homework.html',
-                               file_types=str(ALLOWED_EXTENSIONS),
+                               file_types=str(config.get('allowed_extension',[])),
                                course_number=course, hw_number=number,
                                num_jobs_running=_job_status_db.num_running_jobs(),
                                motd=Motd().get_message())
@@ -170,15 +183,6 @@ def handle_submission(course,ex_type, number):
     if _job_status_db.num_running_jobs() >= MAX_CONCURRENT_JOBS:
         return "Busy! try again in a few seconds.", HTTPStatus.SERVICE_UNAVAILABLE
 
-    try:
-        _get_config_for_ex(course,ex_type,number)
-    except KeyError as ex:
-        return "We don't have such a value. " +  str(ex), HTTPStatus.NOT_FOUND
-    except SanityError as ex:
-        return "<H1>Message to Tutor</H1>There is something wrong in the config file for this exercise.<br>"\
-               "Please fix and submit again. <br><strong>Error: " + str(ex) + '</strong>'
-    except FileNotFoundError:
-        return "<H1>Message to Tutor</H1>The config file is not found. Deleted or acces problems?<br>" , HTTPStatus.NOT_FOUND
 
     # check if the post request has the file part
     if 'file' not in request.files:
@@ -194,7 +198,7 @@ def handle_submission(course,ex_type, number):
     if ex_type not in ('lab', 'hw'):
         return "please use {lab|hw} in the URL", HTTPStatus.BAD_REQUEST
     try:
-        uploaded_file_path = _upload_file()
+        uploaded_file_path = _upload_file(config.get('allowed_extension',[]))
     except _HttpStatusError as e:
         return e.text, e.status_code
 
@@ -215,15 +219,16 @@ def handle_submission(course,ex_type, number):
     return the_reply
 
 
-def _upload_file():
+def _upload_file(extensions :list):
     """ upload homework 'number'
+    :param extensions list of possible file extensions e.g. ['zip', 'c' ] . Can be empty
     :return absolute file path of the loaded file or raise
     :note Caller has to remove the temp dir created here
     """
     assert request.method == 'POST'
     file = request.files['file']
 
-    if not(file and allowed_file(file.filename)):
+    if not(file and allowed_file(file.filename, extensions)):
         raise _HttpStatusError("unexpected file type", 400)
 
     filename = secure_filename(file.filename)
