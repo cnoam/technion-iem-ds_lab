@@ -58,7 +58,7 @@ class Uploader():
     def start_uploading(self):
         """ create a worker thread,
         start uploading from the input queue, do not overwhelm the server
-        :return immediatley.
+        :return immediately.
         """
         self.worker_thread = threading.Thread(target=self._work)
         self.worker_thread.start()
@@ -75,7 +75,8 @@ class Uploader():
             elif r.status_code == HTTPStatus.BAD_REQUEST:
                 logging.warning("The server rejected file: " + file_name)
             else:
-                raise RuntimeError()
+                logging.fatal("requested URL " + str(r.request.url))
+                raise RuntimeError(r.content.decode())
 
         self.num_uploaded += 1
         logging.info(
@@ -104,7 +105,7 @@ class Uploader():
                 self._upload(self.input_queue.pop(0))
             logging.info("worker finished")
         except requests.Timeout as ex:
-            logging.fatal("Server not timed out! " + str(ex))
+            logging.fatal("Server timed out! " + str(ex))
         except requests.ConnectionError as ex:
             logging.error('Connection to server failed. Check if the server is running.\n' + str(ex))
 
@@ -119,9 +120,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", help="hostname of the server")
-    parser.add_argument("--file", help="input file name (ZIP)")
-    parser.add_argument("--ex_num", help="exercise number (e.g. 3)")
-    parser.add_argument("--course", help="course ID number (e.g. 94219)")
+    parser.add_argument("--file", help="input file name (ZIP)", required=True)
+    parser.add_argument("--ex_num", help="exercise number (e.g. 3)", required=True)
+    parser.add_argument("--course", help="course ID number (e.g. 94219)", required=True)
     args = parser.parse_args()
 
     path_to_zip_file = args.file
