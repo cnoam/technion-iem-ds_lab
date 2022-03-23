@@ -340,13 +340,12 @@ def get_spark_logs():
     batchId=request.args.get('batchId') # 42
 
     cluster_name = os.getenv('SPARK_CLUSTER_NAME')
-    livy_password = os.getenv('LIVY_PASS')
+    livy_password = os.getenv('LIVY_PASS') # TODO stop using passwords
+    spark_private_key_path = os.getenv('SPARK_PKEY_PATH')  # absolute file path to the private key file. Needed for ssh auth.
     cluster_url_name = f"https://{cluster_name}.azurehdinsight.net"
     cluster_url_ssh_name = f"{cluster_name}-ssh.azurehdinsight.net"
     if cluster_name is None:
         return "Internal Error: missing SPARK_CLUSTER_NAME env var in the server", HTTPStatus.INTERNAL_SERVER_ERROR
-    if livy_password is None:
-        return "Internal Error: missing LIVY_PASS env var in the server", HTTPStatus.INTERNAL_SERVER_ERROR
     if appId is None and batchId is None:
         return "use ?appId=application_1624861312520_0009 or ?batchId=4", HTTPStatus.BAD_REQUEST
 
@@ -364,7 +363,7 @@ def get_spark_logs():
         if match is None or len(match) != 1:
             return "use ?appId=application_1624861312520_0009", HTTPStatus.BAD_REQUEST
 
-        response =  queries.get_logs(cluster_url_ssh_name, livy_password, appId)
+        response =  queries.get_logs(cluster_url_ssh_name, spark_private_key_path, appId)
     except queries.ConnectionError:
         return "Could not connect to the Spark server", HTTPStatus.BAD_GATEWAY
     except queries.SparkError as ex:

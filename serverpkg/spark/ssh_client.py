@@ -21,9 +21,9 @@ from pssh.clients import ParallelSSHClient
 #           hostname, host_output.exit_code, stdout))
 
 
-def parallel_ssh(host, user, password, command):
+def parallel_ssh(host, user, path_to_private_key, command):
     #enable_host_logger()
-    client = ParallelSSHClient([host], user=user, password=password)
+    client = ParallelSSHClient([host], user=user, pkey=path_to_private_key)
     output = client.run_command(command)
     client.join()
     stdout = ""
@@ -36,10 +36,10 @@ def parallel_ssh(host, user, password, command):
     return stdout
 
 
-def ssh_client(host, user, password, command):
-    return parallel_ssh(host, user, password, command)
+def ssh_client(host, user, pkey, command):
+    return parallel_ssh(host, user, pkey, command)
 
 if __name__ == "__main__":
     host = "noam-spark-ssh.azurehdinsight.net"
-    o = parallel_ssh(host=host, user="sshuser", password="%Qq12345678", command="ls /")
+    o = parallel_ssh(host=host, user="sshuser", path_to_private_key="/home/cnoam/.ssh/spark_key", command="ls /")
     print(o)

@@ -13,7 +13,7 @@ class ConnectionError(Exception): pass
 class SparkError(Exception):pass
 
 
-def get_logs(cluster_url_ssh_name, passwd, appId):
+def get_logs(cluster_url_ssh_name, pkey, appId):
     """ get the logs of the application from the Spark cluster.
         This function uses YARN log aggregation.
 
@@ -22,17 +22,16 @@ def get_logs(cluster_url_ssh_name, passwd, appId):
     :return: tuple (reply body, HTTP status code)
     """
     # yarn logs  -am -1    -log_files stdout -applicationId application_1624861312520_0009
-    cluster_url_ssh_name = cluster_url_ssh_name
     # get the log of stdout from the last run from this appId
     cmd = f"yarn logs  -am -1 -log_files stdout -applicationId {appId}"
     logger.info(f"connecting using SSH to Spark node {cluster_url_ssh_name}")
     try:
-        output = ssh_client(host=cluster_url_ssh_name, user="sshuser", password=passwd, command=cmd)
+        output = ssh_client(host=cluster_url_ssh_name, user="sshuser", pkey=pkey, command=cmd)
     except pssh.exceptions.UnknownHostError as ex:
         logger.error("SSH receive error" + str(ex))
         return utils.wrap_html_source(str(ex)), HTTPStatus.SERVICE_UNAVAILABLE
     except pssh.exceptions.AuthenticationError as ex:
-        print("SSH connection error" + str(ex))
+        logger.error("SSH connection error" + str(ex))
         return utils.wrap_html_source(str(ex)), HTTPStatus.SERVICE_UNAVAILABLE
     except Exception as ex:
         return utils.wrap_html_source(str(ex)), HTTPStatus.INTERNAL_SERVER_ERROR
