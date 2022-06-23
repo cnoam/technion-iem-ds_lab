@@ -346,6 +346,8 @@ def get_spark_logs():
     cluster_url_ssh_name = f"{cluster_name}-ssh.azurehdinsight.net"
     if cluster_name is None:
         return "Internal Error: missing SPARK_CLUSTER_NAME env var in the server", HTTPStatus.INTERNAL_SERVER_ERROR
+    if spark_private_key_path is None:
+        return "Internal Error: missing SPARK_PKEY_PATH env var in the server", HTTPStatus.INTERNAL_SERVER_ERROR
     if appId is None and batchId is None:
         return "use ?appId=application_1624861312520_0009 or ?batchId=4", HTTPStatus.BAD_REQUEST
 
