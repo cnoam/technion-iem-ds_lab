@@ -15,6 +15,15 @@ class Job():
        a job  represents a task to execute the uploaded code.
        If using a relational database, Job is the object related to a row in the jobs table
 
+    NOTE: when adding/changing fields in this class, you must DELETE the database file
+     and update in several places:
+     - from_tuple
+     - to_tuple
+     - JobSqlSchema
+     - __init__
+     - insert_to_db
+
+     some interesting fields:
         status: (pending|running|failed|completed)
         run_time: None | float-seconds
         stdout: None | string
@@ -42,7 +51,9 @@ class Job():
          j.executor_file_name,
          j.exercise_name,
          j.filename,
-         j.score) = value
+         j.score,
+         j.course_id,
+         j.homeworkd_id) = value
 
         # convert to status:Job.Status
         j.status = Job.Status[j.status]
@@ -66,15 +77,17 @@ class Job():
                   comparator_file_name text,
                   executor_file_name text,
                   exercise_name text,
-                  filename   text,
-                  score     integer
+                  filename      text,
+                  score         integer,
+                  course_id     integer,
+                  homework_id   integer
                   """
 
     def to_tuple(self):
         return (self.job_id, self.status.name, self.run_time, self.stdout, self.stderr, self.exit_code, self.start_time,
-                self.comparator_file_name, self.executor_file_name, self.exercise_name, self.filename, self.score)
+                self.comparator_file_name, self.executor_file_name, self.exercise_name, self.filename, self.score, self.course_id, self.homework_id)
 
-    def __init__(self, exercise_name, filename,job_id=None):
+    def __init__(self, exercise_name, filename,course_id, job_id=None):
         """
         :param job_id: job ID (unique value)
         :param filename: <string> file name to check, in the format [optional prefix]nnnnnn_mmmmmm.tar.gz
@@ -90,6 +103,9 @@ class Job():
         self.executor_file_name = None
         self.exercise_name = str(exercise_name) # used to identify for which exercise/lab number this job is related.
         self.score = None
+        self.course_id = course_id
+        self.homework_id = None
+
 
         matches = re.findall(r"(\d{8,9})_(\d{8,9})", filename)
         if len(matches)==0 :
@@ -206,7 +222,7 @@ class JobStatusDB():
         with sqlite3.connect(self.db_file_name) as conn:
             conn.execute("DROP TABLE jobs; ")
 
-    def insert_to_db(self, job):
+    def insert_to_db(self, job: Job):
         """
         add a new record to the DB
         :postcond: update the job.job_id if it was None
@@ -214,7 +230,7 @@ class JobStatusDB():
         :return: job id : int
         """
         with sqlite3.connect(self.db_file_name) as conn:
-            cur =conn.execute("INSERT INTO jobs VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", job.to_tuple())
+            cur =conn.execute("INSERT INTO jobs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", job.to_tuple())
             id = cur.lastrowid
             job.job_id = id
         return job.job_id
@@ -245,12 +261,12 @@ class JobStatusDB():
             count_list = conn.execute("SELECT COUNT(*) FROM jobs;").fetchall()
         return count_list[0][0]
 
-    def add_job(self, ex_type_name:tuple, package_file_name) -> Job:
+    def add_job(self, ex_type_name:tuple, package_file_name, course_id) -> Job:
         """Create a new job object, give it ID, put it in the db
         :return the new Job object
         """
         assert isinstance(ex_type_name, tuple)
-        a_job = Job(ex_type_name[1], filename=package_file_name)
+        a_job = Job(ex_type_name[1], course_id=course_id, filename=package_file_name)
         self.insert_to_db(a_job)
         return a_job
 

@@ -269,6 +269,7 @@ def show_leaderboard(course,hw_id):
 
 
 # TODO this (like many others) is not related to the Server code. move to another file
+# TODO the job object contains the courseID, so remove it from the url
 @app.route('/<int:courseId>/show_diff', methods=['GET', 'POST'])
 def show_diff(courseId):
     """returns an HTML page with visual diff between the reference file and the actual output.
@@ -289,7 +290,11 @@ def show_diff(courseId):
     job = _job_status_db.select_a_job(job_id)
     if job is None:
         return "job ID not found", HTTPStatus.NOT_FOUND
-    return show_html_diff(courseId, job, first)
+
+    if job.course_id != courseId:
+        return "This job belongs to another course", HTTPStatus.NOT_FOUND
+
+    return show_html_diff(job.course_id, job, first)
 
 @app.route('/spark/delete', methods=['GET'])
 def delete_spark_batch():
@@ -506,7 +511,7 @@ def handle_file_async(package_under_test, course_number, ex_type, ex_number, ref
     :param reference_output: 
     :return: html page showing link to the tracking page
     """
-    new_job = _job_status_db.add_job((ex_type, ex_number),package_under_test)
+    new_job = _job_status_db.add_job((ex_type, ex_number),package_under_test, course_id=course_number)
     try:
         config = _get_config_for_ex(course_number, ex_type, ex_number)
     except KeyError as ex:
