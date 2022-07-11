@@ -8,6 +8,14 @@ from .server_codes import ExitCode
 logger = Logger(__name__).logger
 
 
+def _putenv(name,value):
+    import sys
+    import os
+    if sys.version_info[0] == 3 and sys.version_info[1] <=8:
+        os.environ.putenv(name,value)
+    else:
+        os.putenv(name,value)
+
 def _extract_run_time(string):
     """
     extract the runtime that we wrote as the last line in the stderr stream supplied in string
@@ -81,7 +89,7 @@ class AsyncChecker(threading.Thread):
             # and use timeout command there.
             # the timeout value in the shell is shorter than the python's so it will expire first and indicate a problem
             # in the tested executable and not the tester script.
-            os.environ.putenv('UUT_TIMEOUT', str(self.timeout_sec - 1))
+            _putenv('UUT_TIMEOUT', str(self.timeout_sec - 1))
             completed_proc = subprocess.run([executor, self.package_under_test, self.reference_input,
                                              self.reference_output, comparator, self.data_path],
                                             check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -110,6 +118,9 @@ class AsyncChecker(threading.Thread):
         except subprocess.CalledProcessError:
             exit_code= ExitCode.PROCESS_ERROR
             run_time=None
+        except Exception as ex:
+            logger.fatal("Internal error in Async::run.")
+            logger.exception(ex)
         finally:
             try:
                 out = completed_proc.stdout.decode('utf-8') if completed_proc is not None else None
