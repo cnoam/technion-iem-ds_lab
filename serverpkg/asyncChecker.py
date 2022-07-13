@@ -72,6 +72,7 @@ class AsyncChecker(threading.Thread):
 
         exit_code = None
         run_time = None
+        score = -1
         try:
             import  os
             logger.info("ref files:  " + self.reference_input + "," + self.reference_output)
@@ -112,7 +113,7 @@ class AsyncChecker(threading.Thread):
             exit_code = ExitCode.SERVER_ERROR
             run_time = None
         except subprocess.TimeoutExpired:
-            logger.warning("job timed out. timeout set to "+ str(self.timeout_sec) + " seconds")
+            logger.warning("job: timed out. timeout set to "+ str(self.timeout_sec) + " seconds")
             exit_code = ExitCode.TIMEOUT
             run_time = None
         except subprocess.CalledProcessError:
