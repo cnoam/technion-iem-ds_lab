@@ -39,6 +39,7 @@ case $USE_LANG in
    ;;
    
    xv6)
+   docker build -t python_base -f Dockerfile_py_base .
    docker build -t server_cpp -f Dockerfile_cpp .
    docker build -t server_xv6 -f Dockerfile_xv6 .
    ;;

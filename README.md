@@ -127,6 +127,9 @@ These runners are already implemented:
    (or just this file if no archive is used)
   - check_java_file.sh: run the file ```Main.java``` in the supplied archive
   - check_sh.sh: run the file using bash
+  - check_xv6.sh: copy repository of xv6, apply user's patch, compile and run.<br>
+   This needs several files described in the shell script.
+      
    
      
 ## Adding/Modifying matcher
@@ -156,15 +159,27 @@ The server code will look for the *last* occurrence of this pattern and extract 
 
 ## Rebuilding the Docker image
 To rebuild the docker image and immediately run it:<br>
-    
-    
- build a new Docker container, stop the current one, start the new one:
+        
+Build a new Docker container, stop the current one, start the new one:
 ```
 $ ssh myhost
 (myhost) $ cd checker
 (myhost) $ git pull
 (myhost) $ cd scripts && ./again.sh
 ```
+
+**WARNING:** if a Dockerfile depends on another, all dependencies MUST be built manually! <br>
+Moreover, I found that sometimes I must add `--no-cache`
+
+For example, to rebuild the docker image of XV6, you must <br>
+```
+   docker build -t python_base -f Dockerfile_py_base .
+   docker build -t server_cpp -f Dockerfile_cpp .
+   docker build -t server_xv6 -f Dockerfile_xv6 .
+```
+
+Therefore, I strongly recommend testing the code on the host (or PC) before creating and image.
+
 
 # Running the web application
 The webapp runs as a Docker container.<br>
