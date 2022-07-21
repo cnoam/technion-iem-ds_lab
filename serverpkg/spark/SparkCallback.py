@@ -2,11 +2,14 @@
 """We need the batch Id from the output of the run ( in a text string).
 This is because we run the call in a subprocess.
 """
-import logging
 
+from serverpkg.logger import Logger
+from serverpkg.spark import SparkResources
+
+logger = Logger(__name__).logger
 
 class SparkCallback:
-    def __init__(self, sender, running_jobs, cb=None):
+    def __init__(self, sender, resource_m : SparkResources.SparkResources, cb=None):
         """
         :param sender: unique ID of the user who sends the job (str)
         :param running_jobs dict of sender_ID -> batch_ID
@@ -14,8 +17,8 @@ class SparkCallback:
         """
         self.next_cb = cb
         self.batch_id = None
-        self.source = sender
-        self.db = running_jobs
+        self.sender = sender
+        self.rm = resource_m
         if sender is None or len(sender) < 2:
             raise ValueError('missing sender name')
 
@@ -26,7 +29,7 @@ class SparkCallback:
         if exit_code == 0:
             self._parse_batch_id(stdout_str=stdout_s)
             # add the new batch_id only if success
-            self.db[self.source] = self.batch_id
+            self.rm.add_batch_id(user_id=self.sender, batch_id=self.batch_id)
         if self.next_cb:
             self.next_cb()
 
@@ -35,7 +38,7 @@ class SparkCallback:
         import re
         matches = re.findall('^BATCH ID = (\d+)', stdout_str, flags=re.MULTILINE)
         if len(matches) == 0:
-            logging.warning("batch ID not found in stdout")
+            logger.warning("batch ID not found in stdout")
         else:
             self.batch_id = matches[0]
 

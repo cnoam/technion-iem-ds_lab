@@ -141,9 +141,24 @@ def get_job_results():
     return resp
 
 
-@app.route("/spark/running_jobs", methods=['GET'])
+@app.route("/spark/local_job_list", methods=['GET'])
 def get_spark_batch_list():
-    import pprint
-    pp = pprint.PrettyPrinter()
-    from .server import running_spark_jobs
-    return pp.pformat(running_spark_jobs)
+    resman = app.config['spark_rm']
+    return resman.dump_state()
+
+
+@app.route("/spark/jobs", methods=['GET'])
+def get_spark_jobs():
+    import json
+    resman = app.config['spark_rm']
+    result = [{'appid': x['appId'] , 'batchid': x['id'], 'state': x['state']} for x in resman.query.get_spark_app_list()]
+    return json.dumps(result,indent=4), HTTPStatus.OK
+
+
+@app.route("/spark/drop_running_jobs", methods=['GET'])
+@login_required
+def drop_spark_running_jobs():
+    resman = app.config['spark_rm']
+    resman.ongoing_tasks.clear()
+    return "drop runing jobs table: OK", HTTPStatus.OK
+

@@ -1,5 +1,8 @@
 # written and tested on linux only
 # It will not work on Windows
+
+import logging
+import utils
 import os
 import sys
 
@@ -16,10 +19,13 @@ from werkzeug.utils import secure_filename
 import subprocess
 from .asyncChecker import AsyncChecker
 from . import show_jobs, job_status
+from apscheduler.schedulers.background import BackgroundScheduler
+from serverpkg.spark.SparkResources import SparkResources
+from serverpkg.spark.queries import ConnectionError, SparkError
 
-running_spark_jobs = {} # HACK: this is lame, since data will not persist between restarts. Should be in a db/file
 
 def _configure_app():
+    global scheduler
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
     data_path = os.environ['CHECKER_DATA_DIR']
 
@@ -32,11 +38,40 @@ def _configure_app():
     app.config['assignment_config_file'] = data_path + '/hw_settings.json'
     app.config['database_dir'] = os.environ['CHECKER_LOG_DIR']
 
-    app.config['LDAP_HOST'] = 'ldap://ccldap.technion.ac.il'
-    app.config['LDAP_BASE_DN'] = 'ou=tx,dc=technion,dc=ac,dc=il'
+    # app.config['LDAP_HOST'] = 'ldap://ccldap.technion.ac.il'
+    # app.config['LDAP_BASE_DN'] = 'ou=tx,dc=technion,dc=ac,dc=il'
     # app.config['LDAP_USERNAME'] = 'cn=cnoam,ou=Users,dc=il'
     # app.config['LDAP_PASSWORD'] = '--'
     app.secret_key = b'3456o00sdf045'
+
+    # we may want to limit who can submit jobs.
+    # if the set is empty - no limit. if non empty, it contains the ID of the person allowed.
+    # Better to have it per course, but not worth the effort.
+    app.config['allowed_submitter_id'] = utils.load_allowed_submitters_id(f'{app.config["data_dir"]}/course_users.txt')
+    if len(app.config['allowed_submitter_id']) == 0:
+        logging.warning("There is no limitation on submitter ID. Anyone can submit jobs.")
+
+    app.config['cluster_name'] = os.getenv('SPARK_CLUSTER_NAME')
+    app.config['cluster_url_ssh'] = f"{app.config['cluster_name']}-ssh.azurehdinsight.net"
+    app.config['cluster_url_https'] = f"https://{app.config['cluster_name']}.azurehdinsight.net"
+    app.config['livy_password'] = os.getenv('LIVY_PASS')
+
+    # todo: this should be checked only for projects using spark.
+    if app.config['cluster_name'] is None:
+        return "Internal Error: missing SPARK_CLUSTER_NAME env var in the server", HTTPStatus.INTERNAL_SERVER_ERROR
+    if app.config['livy_password'] is None:
+        return "Internal Error: missing LIVY_PASS env var in the server", HTTPStatus.INTERNAL_SERVER_ERROR
+
+    app.config['spark_private_key_path'] = os.getenv('SPARK_PKEY_PATH')  # absolute file path to the private key file. Needed for ssh auth.
+
+    # This is not a config, so maybe move it from here
+    app.config['spark_rm'] = SparkResources(cluster_name=app.config['cluster_name'],
+                                            cluster_url_ssh=app.config['cluster_url_ssh'],
+                                            cluster_url_https=app.config['cluster_url_https'],
+                                            priv_key_path=app.config['spark_private_key_path'],
+                                            livy_pass=app.config['livy_password'],
+                                            allowed_submitters=app.config['allowed_submitter_id'],
+                                            scheduler= scheduler)
 
 
 class SanityError(Exception):
@@ -70,6 +105,8 @@ def _running_on_dev_machine():
 
 # -- prepare some global vars
 app = Flask(__name__, template_folder='./templates')
+scheduler = BackgroundScheduler()
+scheduler.start()
 logger = Logger(__name__).logger
 
 # The following import is needed to prepare the admin endpoints
@@ -303,22 +340,18 @@ def delete_spark_batch():
     import re
     from serverpkg.spark import queries
     batchId = request.args.get('batchId')  # 42
-
-    cluster_name = os.getenv('SPARK_CLUSTER_NAME')
-    livy_password = os.getenv('LIVY_PASS')
-    cluster_url_name = f"https://{cluster_name}.azurehdinsight.net"
-    if cluster_name is None:
-        return "Internal Error: missing SPARK_CLUSTER_NAME env var in the server", HTTPStatus.INTERNAL_SERVER_ERROR
-    if livy_password is None:
-        return "Internal Error: missing LIVY_PASS env var in the server", HTTPStatus.INTERNAL_SERVER_ERROR
     if batchId is None:
         return "use ?batchId=4", HTTPStatus.BAD_REQUEST
+
+    url = app.config['cluster_url_https']
+    live_pass = app.config['livy_password']
+    queryObj = app.config['spark_rm'].query
     try:
         try:
             batchId = int(batchId)
         except ValueError:
             return "batch Id must be integer", HTTPStatus.BAD_REQUEST
-        appId = queries.get_appId_from_batchId(cluster_url_name, livy_password, batchId)
+        appId = queryObj.get_appId_from_batchId(url, batchId)
         if appId is None:
             return f"There is no AppId yet for batch {batchId}. Please try again later", HTTPStatus.OK
 
@@ -326,10 +359,10 @@ def delete_spark_batch():
         if match is None or len(match) != 1:
             return "use ?appId=application_1624861312520_0009", HTTPStatus.BAD_REQUEST
 
-        response = queries.delete_batch(cluster_url_name, livy_password, batchId)
-    except queries.ConnectionError:
+        response = queryObj.delete_batch(url, batchId)
+    except ConnectionError:
         return "Could not connect to the Spark server", HTTPStatus.BAD_GATEWAY
-    except queries.SparkError as ex:
+    except SparkError as ex:
         return "Spark server returned unexpected value or did not find the requested batch:  " + str(
             ex), HTTPStatus.NOT_FOUND
     return ("job deleted" if response.status_code == HTTPStatus.OK else "failed deleting the job" + response.text), response.status_code
@@ -337,40 +370,27 @@ def delete_spark_batch():
 
 @app.route('/spark/logs')
 def get_spark_logs():
-    import re
-    from serverpkg.spark import queries
     """ get the logs from an application running in spark server.
-    This is a prototype quality code -- hardcoded everything"""
+    """
+    from serverpkg.spark import queries
     appId=request.args.get('appId') # application_1624861312520_0009
     batchId=request.args.get('batchId') # 42
 
-    cluster_name = os.getenv('SPARK_CLUSTER_NAME')
-    livy_password = os.getenv('LIVY_PASS') # TODO stop using passwords
-    spark_private_key_path = os.getenv('SPARK_PKEY_PATH')  # absolute file path to the private key file. Needed for ssh auth.
-    cluster_url_name = f"https://{cluster_name}.azurehdinsight.net"
-    cluster_url_ssh_name = f"{cluster_name}-ssh.azurehdinsight.net"
-    if cluster_name is None:
-        return "Internal Error: missing SPARK_CLUSTER_NAME env var in the server", HTTPStatus.INTERNAL_SERVER_ERROR
-    if spark_private_key_path is None:
-        return "Internal Error: missing SPARK_PKEY_PATH env var in the server", HTTPStatus.INTERNAL_SERVER_ERROR
     if appId is None and batchId is None:
         return "use ?appId=application_1624861312520_0009 or ?batchId=4", HTTPStatus.BAD_REQUEST
 
+    query_ = app.config['spark_rm'].query
     try:
         if batchId:
             try:
                 batchId = int(batchId)
             except ValueError:
                 return "batch Id must be integer", HTTPStatus.BAD_REQUEST
-            appId = queries.get_appId_from_batchId(cluster_url_name, livy_password, batchId)
+            appId = query_.get_appId_from_batchId(batchId)
             if appId is None:
                 return f"There is no AppId yet for batch {batchId}. Please try again later", HTTPStatus.OK
 
-        match = re.findall(r"^application_\d{13}_\d{4}$", appId)
-        if match is None or len(match) != 1:
-            return "use ?appId=application_1624861312520_0009", HTTPStatus.BAD_REQUEST
-
-        response =  queries.get_logs(cluster_url_ssh_name, spark_private_key_path, appId)
+        response = query_.get_logs(appId)
     except queries.ConnectionError:
         return "Could not connect to the Spark server", HTTPStatus.BAD_GATEWAY
     except queries.SparkError as ex:
@@ -385,27 +405,16 @@ def handle_file(package_under_test,course_number, ex_type, ex_number, reference_
 
     # HACK
     if course_number == 96224:
-        # '/tmp/tmpfu0d54qs/58708389_111111111_66666666.py'  -> '58708389_111111111_66666666.py'
-        sender = package_under_test[package_under_test.rfind('/') + 1:]
-        # we allow a single job to run, so if user uploads another file (with the same name), we first kill the older job
-        # this should be done async since asking spark to kill a job takes a long time.
-        if sender in running_spark_jobs:
-            from serverpkg.spark.queries import delete_batch
-            cluster_name = os.getenv('SPARK_CLUSTER_NAME')
-            livy_password = os.getenv('LIVY_PASS')
-            cluster_url_name = f"https://{cluster_name}.azurehdinsight.net"
-            batch_id = running_spark_jobs[sender]
-            response = delete_batch(cluster_url_name=cluster_url_name, livy_password=livy_password, batchId=batch_id )
-            if response.status_code == HTTPStatus.OK:
-                # upon succesful completion, remove that batch id, and only then we can add to the dict the batchId of the new job.
-                # or use a set ?
-                running_spark_jobs.pop(sender)
-            else:
-                logger.warning(f"Deleting batch {batch_id} failed. response:{str(response)}")
+        # '/tmp/tmpfu0d54qs/58708389_111111111_66666666.py'  -> '58708389'
+        slash = package_under_test.rfind('/') + 1
+        sender = package_under_test[slash: package_under_test.find('_', slash  )]
+        stat = app.config['spark_rm'].allow_user_to_submit(sender)
+        if not stat['ok']:
+            return stat['reason'], HTTPStatus.UNAUTHORIZED
 
         # we need the batch ID which is available only when the async call will finish so chain the callbacks
         from serverpkg.spark import SparkCallback
-        s = SparkCallback.SparkCallback(sender=sender, running_jobs=running_spark_jobs, cb=completionCb)
+        s = SparkCallback.SparkCallback(sender=sender, resource_m= app.config['spark_rm'], cb=completionCb)
         completionCb = s
 
     if use_async:

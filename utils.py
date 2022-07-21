@@ -36,6 +36,16 @@ def commitId() -> str:
     return id
 
 
+def load_allowed_submitters_id(fname: str)-> set:
+    s = set()
+    try:
+        with open(fname, "r") as fin:
+            s = fin.readlines()
+            s = { x.strip() for x in s}
+    except:
+        pass
+    return s
+
 if __name__ == "__main__":
 
     @measure
