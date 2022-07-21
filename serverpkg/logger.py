@@ -12,11 +12,12 @@ class Logger:
     pre configured logger object.
     simply give it module name
     """
-    log_dir_name = os.environ['CHECKER_LOG_DIR'] # "/logs"
+
     def __init__(self, name):
-        self.log_path = Logger.log_dir_name
         if not _in_docker():
             self.log_path = "./logs/"
+        else:
+            self.log_path = os.environ['CHECKER_LOG_DIR']  # "/logs"
         try:
              os.mkdir(self.log_path)
         except FileExistsError:

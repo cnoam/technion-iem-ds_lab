@@ -28,7 +28,7 @@ def parallel_ssh(host, user, path_to_private_key, command):
     client.join()
     stdout = ""
     for host_output in output:
-        if host_output.exit_code != 0 :
+        if False and host_output.exit_code != 0 :  #TODO: find why None is returned
             raise Exception("host returned exit code " + str(host_output.exit_code) )
         stdout_li = list(host_output.stdout)
         for line in stdout_li:

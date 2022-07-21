@@ -220,3 +220,14 @@ During development, it is easier to run only the python code without Docker:
   source venv/bin/activate
   gunicorn3 -b 0.0.0.0:8000 --workers 3 serverpkg.server:app
 ```
+
+# Working with Spark
+
+When submitting a job (uploaded a python file), a BATCH is created in spark.
+This batch is converted to application ID after about 30 seconds (depending on the load?).
+To check the status as we know it locally (i.e., not directly in Spark), there is a link in the admin page.
+
+If this table is garbaged, clean it with a link from the same page.
+
+The JOBS table shown in the website only shows that the job was submitted successfully.
+In a better world, the job will get status updates such as submitted, starting, failed, finished.
