@@ -6,7 +6,7 @@ This project is a web server for students to upload, build and execute programmi
 The server runs in a Docker container, on a linux host.
 
 It is developed as a small scale alternative to [CodeRunner](https://moodle.org/plugins/qtype_coderunner) .
-#### Maturity: In development, pre alpha.
+#### Maturity: In development, used by faculty courses
 
 # Getting Started
 <b>TODO</b> -- add content <br>
@@ -231,3 +231,14 @@ If this table is garbaged, clean it with a link from the same page.
 
 The JOBS table shown in the website only shows that the job was submitted successfully.
 In a better world, the job will get status updates such as submitted, starting, failed, finished.
+    
+## Limiting jobs per student
+    Experience showed that students submit multipe versions of their code without deleting the previous runs, so the cluster is clogged.
+    Now there is a kind of resource manager:
+    - user must be in a whitelist to be eligible to submit. We use ID of one of each team to get a unique value.
+    - user is limited to 3 concurrent submissions. When a job is finished/dead/killed, the resource manage is updated (by polling every 1 minute).
+    - the yarn/spark flow is submit -> get batch ID -> get application ID in state 'accepted' -> state starting -> state running -> state dead/success
+    - the resource data must be persistent in case the docker container is restarted.
+    - the resource data must be multi process safe (both R and W) because the Flask server runs several processes.
+    
+    
