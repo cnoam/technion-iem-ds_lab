@@ -9,7 +9,7 @@ from .ssh_client import ssh_client
 from serverpkg.logger import Logger
 logger = Logger(__name__).logger
 
-class ConnectionError(Exception): pass
+
 class SparkError(Exception):pass
 
 
@@ -44,7 +44,7 @@ class SparkAdminQuery:
             output = ssh_client(host=self.cluster_url_ssh_name, user="sshuser", pkey=self.pkey, command=cmd)
         except (pssh.exceptions.UnknownHostError, pssh.exceptions.AuthenticationError) as ex:
             logger.error("SSH receive error" + str(ex))
-            raise ConnectionError(str(ex))
+            raise ConnectionError(ex)
 
         """ Sample output of the yarn command:
         $ yarn app -list

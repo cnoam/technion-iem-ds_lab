@@ -32,7 +32,7 @@ class SparkResources:
                                      livy_password=livy_pass)
 
         # add a periodic task to get updates from Spark server
-        scheduler.add_job( self._update_running_apps, 'interval', seconds=30) # TODO change to minutes = 1
+        scheduler.add_job( self._update_running_apps, 'interval', seconds=60)
 
     def _is_running_app(self, appId: str)-> bool:
         pass
@@ -93,14 +93,18 @@ class SparkResources:
 
         # https://docs.microsoft.com/en-us/rest/api/synapse/data-plane/spark-job-definition/execute-spark-job-definition?tabs=HTTP#livystates
         terminal_state = ('dead','error','killed', 'shutting_down', 'success')
-        sessions = self.query.get_spark_app_list()
-        running_app_ids = {x['appId'] for x in sessions if x['state'] == 'running'}
+        try:
+            sessions = self.query.get_spark_app_list()
+        except ConnectionError:
+            return
+
+        #running_app_ids = {x['appId'] for x in sessions if x['state'] == 'running'}
 
         local_app_and_batch_id = set(self.ongoing_tasks.values())
 
         # and some applicationID will be removed
         local_batch_id = set([x for x in local_app_and_batch_id if not x.startswith('app')])
-        local_app_id = local_app_and_batch_id - local_batch_id
+        #local_app_id = local_app_and_batch_id - local_batch_id
 
         app_id_to_remove = set([x['appId'] for x in sessions if x['state'] in terminal_state])
 
