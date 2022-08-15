@@ -1,0 +1,12 @@
+#!/bin/bash -eu
+
+# send notification to Pagerduty service.
+# usage: notify "message to send"
+
+# to install PageDuty pd-send:
+# https://support.pagerduty.com/docs/pagerduty-agent-integration-guide
+
+KEY=d9b9291a98d24f04d021e4991efd916a
+
+pd-send  -k $KEY -t trigger -d "$1" -c $HOSTNAME
+

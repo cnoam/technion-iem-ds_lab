@@ -1,0 +1,14 @@
+#!/bin/bash -eu
+
+# check the root for low disk space and send a notification.
+# to run periodically, add to ctrontab:
+#   SHELL=/bin/bash
+#   @daily  /home/azureuser/checker/scripts/check_disk_space
+
+CURRENT=$(df / | grep / | awk '{ print $5}' | sed 's/%//g')
+THRESHOLD=90
+
+if [ "$CURRENT" -gt "$THRESHOLD" ] ; then
+    ./notify "Disk Space is critically low. Used: $CURRENT%"
+fi
+
