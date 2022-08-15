@@ -21,7 +21,7 @@ from .asyncChecker import AsyncChecker
 from . import show_jobs, job_status
 from apscheduler.schedulers.background import BackgroundScheduler
 from serverpkg.spark.SparkResources import SparkResources
-from serverpkg.spark.queries import ConnectionError, SparkError
+from serverpkg.spark.queries import SparkError
 
 
 def _configure_app():
@@ -391,7 +391,7 @@ def get_spark_logs():
                 return f"There is no AppId yet for batch {batchId}. Please try again later", HTTPStatus.OK
 
         response = query_.get_logs(appId)
-    except queries.ConnectionError:
+    except ConnectionError:
         return "Could not connect to the Spark server", HTTPStatus.BAD_GATEWAY
     except queries.SparkError as ex:
         return "Spark server returned unexpected value or did not find the requested batch:  "+ str(ex), HTTPStatus.NOT_FOUND
