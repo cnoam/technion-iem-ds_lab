@@ -351,7 +351,7 @@ def delete_spark_batch():
             batchId = int(batchId)
         except ValueError:
             return "batch Id must be integer", HTTPStatus.BAD_REQUEST
-        appId = queryObj.get_appId_from_batchId(url, batchId)
+        appId = queryObj.get_appId_from_batchId(batchId)
         if appId is None:
             return f"There is no AppId yet for batch {batchId}. Please try again later", HTTPStatus.OK
 
@@ -359,7 +359,7 @@ def delete_spark_batch():
         if match is None or len(match) != 1:
             return "use ?appId=application_1624861312520_0009", HTTPStatus.BAD_REQUEST
 
-        response = queryObj.delete_batch(url, batchId)
+        response = queryObj.delete_batch(batchId)
     except ConnectionError:
         return "Could not connect to the Spark server", HTTPStatus.BAD_GATEWAY
     except SparkError as ex:
