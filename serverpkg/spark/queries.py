@@ -120,7 +120,7 @@ class SparkAdminQuery:
         """delete a spark job.
          Use Livy HTTP DELETE command"""
         logger.info(f"delete_batch({batchId})")
-        response = requests.delete(f"{self.cluster_url_ssh_name}/livy/batches/{batchId}",
+        response = requests.delete(f"{self.url_https}/livy/batches/{batchId}",
                                    auth=HTTPBasicAuth('admin', password=self.password),
                                    headers = {'X-Requested-By': 'admin'})
         if response.status_code != HTTPStatus.OK:
