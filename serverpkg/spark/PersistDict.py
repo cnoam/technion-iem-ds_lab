@@ -150,6 +150,15 @@ class PersistMultiDict:
             cur = conn.execute(f"DELETE FROM {self.name} WHERE key=?;", (key,))
         return cur.rowcount
 
+    def remove_v(self, value):
+        """
+        remove all  key-> value from the dict where v=value
+        :return: number of items removed
+        """
+        with sqlite3.connect(self.db_file_name) as conn:
+            cur = conn.execute(f"DELETE FROM {self.name} WHERE value=?;", (value,))
+        return cur.rowcount
+
     def get(self, key):
         """ get a list of values from the dict
         :return {'value': [value1, ... ], 'update_time': [datetime1, ... ]} """
