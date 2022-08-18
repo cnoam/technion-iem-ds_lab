@@ -1,5 +1,7 @@
 from .PersistDict import PersistMultiDict
 from serverpkg.spark.queries import SparkAdminQuery
+from serverpkg.logger import Logger
+logger = Logger(__name__).logger
 
 
 class SparkResources:
@@ -58,6 +60,7 @@ class SparkResources:
     def add_batch_id(self, user_id, batch_id):
         """A batch ID is returned from Spark immediately after submission.
         We save it here too."""
+        logger.debug(f"add_batch_id({user_id},{batch_id})")
         self.ongoing_tasks.add(user_id, batch_id)
 
     def add_app_id(self, user_id, batch_id, application_id)->None:
@@ -68,25 +71,37 @@ class SparkResources:
         :param batch_id: the batch ID that generated this application_id
         :param application_id:
         """
+        logger.debug(f"add_app_id({user_id},{batch_id}, {application_id})")
         self.ongoing_tasks.add(user_id, application_id)
         num_removed = self.ongoing_tasks.remove_kv(user_id,batch_id) # we don't need it anymore
         assert(num_removed == 1)
+        if num_removed != 1:
+            logger.error(f"add_app_id: num_removed = {num_removed}")
 
     def failed_app(self, user_id, batch_id, app_id):
         """We got report that this app failed, so remove from the table.
         It is possible that either of the values is missing, so do not check retval
         """
-        self.ongoing_tasks.remove_kv(user_id,batch_id)
-        self.ongoing_tasks.remove_kv(user_id, app_id)
+        logger.debug(f"failed_app({user_id},{batch_id},{app_id})")
+        nB = self.ongoing_tasks.remove_kv(user_id,batch_id)
+        nApp = self.ongoing_tasks.remove_kv(user_id, app_id)
+        logger.debug(f"failed_app: batches removed: {nB}, apps removed: {nApp}")
 
     def remove_job(self, user_id, application_id):
         """remove the application_id from the list of ongoing apps
         This only changes the listing of apps, it does not stop an app."""
         num_removed = self.ongoing_tasks.remove_kv(user_id,application_id)
         if num_removed != 1:
-            #raise ValueError('bad uid or appid')
+            #logger.debug(f"remove_job({user_id},{application_id}) : num_removed= {num_removed}, but expecting 1")
             pass
 
+    def remove_value(self, value):
+        """remove the batch_id / application_id from the list of ongoing apps
+        This only changes the listing of apps, it does not stop an app."""
+        num_removed = self.ongoing_tasks.remove_v(value)
+        if num_removed != 1:
+            #logger.debug(f"remove_job({user_id},{application_id}) : num_removed= {num_removed}, but expecting 1")
+            pass
     def _update_running_apps(self):
         """get the list of running apps,
         and use this data to update the state for ALL users."""

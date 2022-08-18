@@ -351,6 +351,11 @@ def delete_spark_batch():
             batchId = int(batchId)
         except ValueError:
             return "batch Id must be integer", HTTPStatus.BAD_REQUEST
+
+        # before risking exception, remove the batchID from our local list.
+        # If there is a temporary connection error, this will give extra credit to this user, but we can live with it.
+        app.config['spark_rm'].remove_value(batchId)
+
         appId = queryObj.get_appId_from_batchId(batchId)
         if appId is None:
             return f"There is no AppId yet for batch {batchId}. Please try again later", HTTPStatus.OK
@@ -409,6 +414,7 @@ def handle_file(package_under_test,course_number, ex_type, ex_number, reference_
         slash = package_under_test.rfind('/') + 1
         sender = package_under_test[slash: package_under_test.find('_', slash  )]
         stat = app.config['spark_rm'].allow_user_to_submit(sender)
+        logger.info(f"allow_user_to_submit({sender}) returned {stat}")
         if not stat['ok']:
             return stat['reason'], HTTPStatus.UNAUTHORIZED
 

@@ -144,7 +144,7 @@ def get_job_results():
 @app.route("/spark/local_job_list", methods=['GET'])
 def get_spark_batch_list():
     resman = app.config['spark_rm']
-    return resman.dump_state()
+    return resman.dump_state(), HTTPStatus.OK,  {'Content-Type': 'application/json' }
 
 
 @app.route("/spark/jobs", methods=['GET'])
@@ -152,7 +152,7 @@ def get_spark_jobs():
     import json
     resman = app.config['spark_rm']
     result = [{'appid': x['appId'] , 'batchid': x['id'], 'state': x['state']} for x in resman.query.get_spark_app_list()]
-    return json.dumps(result,indent=4), HTTPStatus.OK
+    return json.dumps(result,indent=4), HTTPStatus.OK,  {'Content-Type': 'application/json' }
 
 
 @app.route("/spark/drop_running_jobs", methods=['GET'])
