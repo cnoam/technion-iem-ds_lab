@@ -42,7 +42,7 @@ class Logger:
         logger.setLevel(logging.DEBUG) # for the whole logger
         #stream_handler.setLevel(logging.DEBUG) # for each handler (if different from the logger)
         #file_handler.setLevel(logging.DEBUG)
-        log_formatter = logging.Formatter('%(asctime)-15s %(name)s - %(levelname)s - %(message)s')
+        log_formatter = logging.Formatter('%(process)d %(asctime)-15s %(name)s - %(levelname)s - %(message)s')
         file_handler.setFormatter(log_formatter)
         stream_handler.setFormatter(log_formatter)
         logger.addHandler(stream_handler)
