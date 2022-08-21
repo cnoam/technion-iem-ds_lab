@@ -1,8 +1,11 @@
+import logging
+
 from .PersistDict import PersistMultiDict
 from serverpkg.spark.queries import SparkAdminQuery
 from serverpkg.logger import Logger
 logger = Logger(__name__).logger
 
+logger.setLevel(logging.INFO)
 
 class SparkResources:
     """Manage number of the running Spark applications.
@@ -107,18 +110,16 @@ class SparkResources:
         and use this data to update the state for ALL users."""
 
         # https://docs.microsoft.com/en-us/rest/api/synapse/data-plane/spark-job-definition/execute-spark-job-definition?tabs=HTTP#livystates
-        terminal_state = ('dead','error','killed', 'shutting_down', 'success')
+        #terminal_state = ('dead','error','killed', 'shutting_down', 'success')
         try:
             sessions = self.query.get_spark_app_list()
         except ConnectionError:
             logger.info("_update_running_apps: Connection error to Spark server")
             return
 
-        #running_app_ids = {x['appId'] for x in sessions if x['state'] == 'running'}
-
         local_app_and_batch_id = set(self.ongoing_tasks.values())
 
-        # and some applicationID will be removed
+        # some applicationID will be removed
         local_batch_id = set([x for x in local_app_and_batch_id if not x.startswith('app')])
         local_app_id = local_app_and_batch_id - local_batch_id
 
