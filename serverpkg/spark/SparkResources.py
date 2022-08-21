@@ -43,7 +43,7 @@ class SparkResources:
         """check if the user may submit new job.
         :return { 'ok': True|False, 'reason': str}
         """
-        if user_id not in self.allowed_submitters:
+        if len(self.allowed_submitters) > 0 and user_id not in self.allowed_submitters:
             return {'ok': False, 'reason': 'User is not in the allowed submitters whitelist<br>'
                                            'The file name must start with 9 digit ID followed by _'}
 
@@ -111,6 +111,7 @@ class SparkResources:
         try:
             sessions = self.query.get_spark_app_list()
         except ConnectionError:
+            logger.info("_update_running_apps: Connection error to Spark server")
             return
 
         #running_app_ids = {x['appId'] for x in sessions if x['state'] == 'running'}
@@ -119,9 +120,10 @@ class SparkResources:
 
         # and some applicationID will be removed
         local_batch_id = set([x for x in local_app_and_batch_id if not x.startswith('app')])
-        #local_app_id = local_app_and_batch_id - local_batch_id
+        local_app_id = local_app_and_batch_id - local_batch_id
 
-        app_id_to_remove = set([x['appId'] for x in sessions if x['state'] in terminal_state])
+        # we cannot rely on Spark/Livy to report ALL the terminated jobs since after a while they are gone from the list
+        running_spark_app_ids = set([x['appId'] for x in sessions if x['state'] in ('starting', 'running')])
 
         # identify the new appID by their batch ID that is still in the local list.
         # we don't take 'starting' applications since sometime the appId is None
@@ -129,6 +131,12 @@ class SparkResources:
         for pair in pairs:
             uid = self.ongoing_tasks.get_key_from_value(pair[0])
             self.add_app_id(uid,pair[0], pair[1])
+
+        app_id_to_remove = local_app_id - (local_app_id.intersection(running_spark_app_ids))
+
+        logger.debug("running_spark_app_ids: " + str(running_spark_app_ids))
+        logger.debug("local_app_id: " + str(local_app_id))
+        logger.debug("app_id_to_remove: " + str(app_id_to_remove))
 
         for id_ in app_id_to_remove:
             uid = self.ongoing_tasks.get_key_from_value(id_)
