@@ -51,6 +51,7 @@ def _configure_app():
     if len(app.config['allowed_submitter_id']) == 0:
         logging.warning("There is no limitation on submitter ID. Anyone can submit jobs.")
 
+    # Try to get SPARK related vars, but don't fail here if we don't have it
     app.config['cluster_name'] = os.getenv('SPARK_CLUSTER_NAME')
     app.config['cluster_url_ssh'] = f"{app.config['cluster_name']}-ssh.azurehdinsight.net"
     app.config['cluster_url_https'] = f"https://{app.config['cluster_name']}.azurehdinsight.net"
@@ -58,9 +59,11 @@ def _configure_app():
 
     # todo: this should be checked only for projects using spark.
     if app.config['cluster_name'] is None:
-        return "Internal Error: missing SPARK_CLUSTER_NAME env var in the server", HTTPStatus.INTERNAL_SERVER_ERROR
+        #return "Internal Error: missing SPARK_CLUSTER_NAME env var in the server", HTTPStatus.INTERNAL_SERVER_ERROR
+        raise KeyError('cluster_name')
     if app.config['livy_password'] is None:
-        return "Internal Error: missing LIVY_PASS env var in the server", HTTPStatus.INTERNAL_SERVER_ERROR
+        #return "Internal Error: missing LIVY_PASS env var in the server", HTTPStatus.INTERNAL_SERVER_ERROR
+        raise KeyError('livy_password')
 
     app.config['spark_private_key_path'] = os.getenv('SPARK_PKEY_PATH')  # absolute file path to the private key file. Needed for ssh auth.
 
@@ -70,9 +73,8 @@ def _configure_app():
                                             cluster_url_https=app.config['cluster_url_https'],
                                             priv_key_path=app.config['spark_private_key_path'],
                                             livy_pass=app.config['livy_password'],
-                                            allowed_submitters=app.config['allowed_submitter_id'],
-                                            scheduler= scheduler)
-
+                                            allowed_submitters=app.config['allowed_submitter_id']
+                                            )
 
 class SanityError(Exception):
     pass
@@ -105,8 +107,34 @@ def _running_on_dev_machine():
 
 # -- prepare some global vars
 app = Flask(__name__, template_folder='./templates')
-scheduler = BackgroundScheduler()
-scheduler.start()
+
+_job_status_db = None
+#one_time_init_called = False
+def one_time_init():
+    """This function should be called once the server is up, and only once.
+    If not done like this, gunicorn will start K workers and each will have its own scheduler
+    """
+    global _job_status_db
+    global one_time_init_called
+    scheduler = BackgroundScheduler()
+    scheduler.start()
+    _configure_app()
+    _job_status_db = job_status.JobStatusDB(app.config['database_dir'])
+    _job_status_db._create_tables()
+
+    try:
+        course_id = _get_configured_course_ids()
+    except FileNotFoundError:
+        logger.fatal("Configuration file not found. Check permissions and name")
+
+    _purge_db_stale_jobs()
+
+    # add a periodic task to get updates from Spark server.
+    # We want that only ONE process will run this periodic job, and all workers will be able to read the results
+    rm = app.config['spark_rm']
+    scheduler.add_job(rm.update_running_apps, 'interval', seconds=SparkResources.SPARK_POLLING_INTERVAL_sec)
+    #one_time_init_called = True
+
 logger = Logger(__name__).logger
 
 # The following import is needed to prepare the admin endpoints
@@ -126,7 +154,7 @@ _job_status_db._create_tables()
 
 # ssl
 #LDAP_SCHEMA = environ.get('LDAP_SCHEMA', 'ldaps')
-app.config['LDAP_PORT'] =  DAP_PORT = os.environ.get('LDAP_PORT', 636)
+#app.config['LDAP_PORT'] =  DAP_PORT = os.environ.get('LDAP_PORT', 636)
 # openLDAP
 #app.config['LDAP_OPENLDAP'] = True
 # Users
@@ -582,10 +610,10 @@ def _purge_db_stale_jobs():
     _job_status_db.delete_jobs(Job.Status.running)
     _job_status_db.delete_jobs(Job.Status.pending)
 
+# when running under gunicorn, the hook will call  one_time_init()
+# When running in the debugger, we need to explicitly call it
 
-try:
-    course_id = _get_configured_course_ids()
-except FileNotFoundError:
-    logger.fatal("Configuration file not found. Check permissions and name")
-
-_purge_db_stale_jobs()
+# bug: using the flag does not work because this module is first loaded and only then the hook is called.
+# possible solution: move it to another module.
+# if not one_time_init_called:
+#     one_time_init()

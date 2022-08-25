@@ -25,8 +25,9 @@ class SparkResources:
       get the appId (takes a long time) and save to the list of running jobs for this user.
     """
     MAX_CONCURRENT_APPS_PER_USER = 3
+    SPARK_POLLING_INTERVAL_sec = 60
 
-    def __init__(self, cluster_name, cluster_url_ssh,cluster_url_https,  allowed_submitters: dict, priv_key_path: str, livy_pass, scheduler):
+    def __init__(self, cluster_name, cluster_url_ssh,cluster_url_https,  allowed_submitters: dict, priv_key_path: str, livy_pass):
         self.cluster_name = cluster_name
         self.allowed_submitters = allowed_submitters
         self.ongoing_tasks = PersistMultiDict('ongoing_apps.db', 'singleSparkRM')
@@ -36,8 +37,6 @@ class SparkResources:
                                      pkey=priv_key_path,
                                      livy_password=livy_pass)
 
-        # add a periodic task to get updates from Spark server
-        scheduler.add_job( self._update_running_apps, 'interval', seconds=60)
 
     def _is_running_app(self, appId: str)-> bool:
         pass
@@ -50,7 +49,7 @@ class SparkResources:
             return {'ok': False, 'reason': 'User is not in the allowed submitters whitelist<br>'
                                            'The file name must start with 9 digit ID followed by _'}
 
-        self._update_running_apps()
+        self.update_running_apps()
 
         user_data = self.ongoing_tasks.get(user_id)['value']
         if len(user_data) == 0:
@@ -105,7 +104,8 @@ class SparkResources:
         if num_removed != 1:
             #logger.debug(f"remove_job({user_id},{application_id}) : num_removed= {num_removed}, but expecting 1")
             pass
-    def _update_running_apps(self):
+
+    def update_running_apps(self):
         """get the list of running apps,
         and use this data to update the state for ALL users."""
 
@@ -114,7 +114,7 @@ class SparkResources:
         try:
             sessions = self.query.get_spark_app_list()
         except ConnectionError:
-            logger.info("_update_running_apps: Connection error to Spark server")
+            logger.info("update_running_apps: Connection error to Spark server")
             return
 
         local_app_and_batch_id = set(self.ongoing_tasks.values())

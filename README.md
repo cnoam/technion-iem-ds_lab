@@ -214,12 +214,27 @@ During development, it is easier to run only the python code without Docker:
   
   ## gunicorn
   
-  To run with gunicorn (one step closer to the realworld configuration):
+  To run with gunicorn (one step closer to the real-world configuration):
   ```
   cd ~/checker
-  source venv/bin/activate
-  gunicorn3 -b 0.0.0.0:8000 --workers 3 serverpkg.server:app
+  # source venv/bin/activate # see note below
+  pip install -r requirements.txt
+  export CHECKER_LOG_DIR=.
+  export LIVY_PASS="the password"
+  export SPARK_CLUSTER_NAME=spark96224
+  gunicorn3 -b 0.0.0.0:8000 --workers 3 --timeout 40 serverpkg.server:app
 ```
+
+Note:
+I tried running with flask installed only in venv, and failed.
+
+Even adding  `-pythonpath /home/cnoam/checker/venv/lib/python3.10/site-packages/` did not help.
+
+### Setting number of workers
+Each worker handles a request (sync), so the timeout must be longer than the maximum handling time. When getting a log it can be 30 seconds.
+One worker is probably dedicated to housekeeping, so to avoid blocking by lengthy op, at least 3 workers are needed, and in practice, should probably use 10 or more.
+
+https://docs.gunicorn.org/en/stable/run.html:  "This number should generally be between 2-4 workers per core in the server. Check the FAQ for ideas on tuning this parameter."
 
 # Working with Spark
 
