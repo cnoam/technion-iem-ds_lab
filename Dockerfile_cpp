@@ -17,5 +17,5 @@ ENV PATH="/tmp/bin:${PATH}"
 WORKDIR /app
 EXPOSE 8000
 
-CMD ["gunicorn", "-b", "0.0.0.0:8000", "--workers", "3", "serverpkg.server:app"]
+CMD ["gunicorn", "-b", "0.0.0.0:8000", "--workers", "10", "serverpkg.server:app"]
 
