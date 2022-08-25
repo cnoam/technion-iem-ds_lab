@@ -151,7 +151,12 @@ def get_spark_batch_list():
 def get_spark_jobs():
     import json
     resman = app.config['spark_rm']
-    result = [{'appid': x['appId'] , 'batchid': x['id'], 'state': x['state']} for x in resman.query.get_spark_app_list()]
+    try:
+        result = [{'appid': x['appId'] , 'batchid': x['id'], 'state': x['state']} for x in resman.query.get_spark_app_list()]
+    except ConnectionError as ex:
+        logger.error(ex)
+        return "Could not connect to the Spark server<br>If it continues, send email to the admin.", HTTPStatus.SERVICE_UNAVAILABLE
+
     return json.dumps(result,indent=4), HTTPStatus.OK,  {'Content-Type': 'application/json' }
 
 
