@@ -24,6 +24,17 @@ def measure(func):
     return _time_it
 
 
+def memoize(func):
+    cache = {}
+
+    def wrapped(*args, **kwargs):
+        key = (tuple(args), tuple(kwargs.items()))
+        if key not in cache:
+            cache[key] = func(*args, **kwargs)
+        return cache[key]
+
+    return wrapped
+
 def commitId() -> str:
     """ try to get the current git commit Id
     :return short commit ID or empty string"""

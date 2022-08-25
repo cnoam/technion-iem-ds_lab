@@ -1,16 +1,20 @@
 import json
 from http import HTTPStatus
-import pssh
+
 import requests
 from requests.auth import HTTPBasicAuth
+import pssh
 from pssh import exceptions
+from pssh.clients import ParallelSSHClient
 import utils
-from .ssh_client import ssh_client
 from serverpkg.logger import Logger
+from utils import memoize
+
 logger = Logger(__name__).logger
 
 
-class SparkError(Exception):pass
+class SparkError(Exception):
+    pass
 
 
 class SparkAdminQuery:
@@ -22,19 +26,41 @@ class SparkAdminQuery:
     If not possible, change the SSH to keep connection open -- this will expedite the results
     """
     def __init__(self,cluster_url_ssh_name,cluster_url_https, pkey, livy_password):
+        """
+        :raises: :py:class:`pssh.exceptions.PKeyFileError` on errors finding
+          provided private key.
+        """
         self.cluster_url_ssh_name = cluster_url_ssh_name
         self.pkey = pkey
         self.password = livy_password
         self.timeout = 10 # seconds
         self.url_https = cluster_url_https
+        self.ssh_client = ParallelSSHClient([cluster_url_ssh_name],
+                                            user="sshuser",
+                                            pkey=pkey)
+
+    def _ssh_blocking_command(self, command : str, timeout = None) -> str:
+        """ execute the command in the connect device and return the stdout.
+
+        :param command: valid command for the remote device
+        :param timeout: optional timeout [seconds]
+        :raise py.pssh.exceptions.Timeout on timeout starting command.
+        :return: stdout of the remote command. exit code of the command is not reported
+        """
+        output = self.ssh_client.run_command(command,timeout=timeout)
+        self.ssh_client.join()
+        stdout = ""
+        for host_output in output:
+            stdout_li = list(host_output.stdout)
+            for line in stdout_li:
+                stdout += line + "\n"
+        return stdout
 
     def get_spark_app_list__(self) -> list:
         """ get the list of the running applications from the Spark cluster.
             This function uses YARN application .
         https://hadoop.apache.org/docs/current/hadoop-yarn/hadoop-yarn-site/YarnCommands.html#application_or_app
 
-        :param cluster_url_ssh_name URL of the spark cluster FOR SSH ACCESS
-        :param pkey path to private key file (str)
         :return: list of application ID found. Anything found is considered running, because yarn does not report completed jobs
         :raise ConnectionError and similar
         """
@@ -72,6 +98,7 @@ class SparkAdminQuery:
         :return: list of { 'id' : batchid, 'application_id': appId, 'state': "running" | ... }
         :raise ConnectionError and similar
         """
+        logger.debug("get_spark_app_list")
         q = f"/livy/batches/"
         h = {"X-Requested-By": "admin", "Content-Type": "application/json"}
         auth = HTTPBasicAuth('admin', self.password)
@@ -91,6 +118,13 @@ class SparkAdminQuery:
             raise SparkError("response is not json")
         return j['sessions']
 
+
+#
+# calling yarn logs in the head node took 4 sec
+# calling it from job submitter using cmd line ssh took more or less the same
+# why does it take 30 sec in python?
+
+
     def get_logs(self, appId):
         """ get the logs of the application from the Spark cluster.
             This function uses YARN log aggregation.
@@ -103,18 +137,20 @@ class SparkAdminQuery:
         # get the log of stdout from the last run from this appId
         cmd = f"yarn logs  -am -1 -log_files stdout -applicationId {appId}"
         logger.info(f"get_logs({appId}): connecting using SSH to Spark node {self.cluster_url_ssh_name}")
+        err = None
         try:
-            output = ssh_client(host=self.cluster_url_ssh_name, user="sshuser", pkey=self.pkey, command=cmd)
+            output = self._ssh_blocking_command(command=cmd, timeout = None)
         except pssh.exceptions.UnknownHostError as ex:
             logger.error("SSH receive error" + str(ex))
-            return utils.wrap_html_source(str(ex)), HTTPStatus.SERVICE_UNAVAILABLE
+            err = utils.wrap_html_source(str(ex)), HTTPStatus.SERVICE_UNAVAILABLE
         except pssh.exceptions.AuthenticationError as ex:
-            logger.error("SSH connection error" + str(ex))
-            return utils.wrap_html_source(str(ex)), HTTPStatus.SERVICE_UNAVAILABLE
+            logger.error("SSH authentication error" + str(ex))
+            err = utils.wrap_html_source(str(ex)), HTTPStatus.SERVICE_UNAVAILABLE
         except Exception as ex:
-            return utils.wrap_html_source(str(ex)), HTTPStatus.INTERNAL_SERVER_ERROR
-
-        return utils.wrap_html_source(output), HTTPStatus.OK
+            err = utils.wrap_html_source(str(ex)), HTTPStatus.INTERNAL_SERVER_ERROR
+        finally:
+            logger.info("get_logs returning") # added for timing measurement of the call
+        return err if err is not None else (utils.wrap_html_source(output), HTTPStatus.OK)
 
     def delete_batch(self, batchId):
         """delete a spark job.
@@ -127,6 +163,7 @@ class SparkAdminQuery:
             logger.warning("Delete batch:" + str(response.content))
         return response
 
+    @memoize
     def get_appId_from_batchId(self, batch_id: int) -> str:
         """
         :param batch_id:
