@@ -1,0 +1,23 @@
+version: '3'
+services:
+  storage:
+    image: redis/redis-stack
+    restart: unless-stopped
+    ports:
+    - '6379:6379'
+
+  submitter:
+    image: server
+    restart: unless-stopped
+    ports:
+      - '80:8000'
+    environment:
+      CHECKER_DATA_DIR : /data
+      CHECKER_LOG_DIR : /logs
+      SPARK_CLUSTER_NAME : $CLUSTER_NAME
+      SPARK_PKEY_PATH : $SPARK_PKEY_PATH
+      LIVY_PASS : $LIVY_PASS
+
+    volumes:
+      - $CHECKER_DATA_DIR/logs:/logs
+      - $CHECKER_DATA_DIR:/data:ro

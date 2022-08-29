@@ -257,3 +257,6 @@ In a better world, the job will get status updates such as submitted, starting, 
     - the resource data must be multi process safe (both R and W) because the Flask server runs several processes.
     
     
+## API rate limiting
+Calling /spark/logs/batchId=NN blocks the server for up to 30 sec depending on spark's responsiveness.
+To avoid blocking the server, I added Rate Limiting. 

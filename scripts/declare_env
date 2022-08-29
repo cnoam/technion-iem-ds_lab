@@ -1,0 +1,13 @@
+#!/bin/bash -eu
+
+#  MUST BE RUN WITH 
+# source ./declare_env
+# 
+#http://jobs.eastus.cloudapp.azure.com/
+#mkdir -p ./logs
+export CHECKER_LOG_DIR=./logs
+export CLUSTER_NAME=spark96224
+export LIVY_PASS=%Qq12345678
+
+# path to the key file.
+export SPARK_PKEY_PATH=/data/data/96224/spark_client

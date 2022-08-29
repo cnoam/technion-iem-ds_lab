@@ -1,0 +1,8 @@
+#!/bin/bash -eu
+
+#http://jobs.eastus.cloudapp.azure.com/
+mkdir -p ./logs
+export CHECKER_LOG_DIR=./logs
+export SPARK_CLUSTER_NAME=spark96224
+export LIVY_PASS=%Qq12345678
+gunicorn -b 0.0.0.0:8000 --workers 55 --timeout 20 --log-level debug serverpkg.server:app

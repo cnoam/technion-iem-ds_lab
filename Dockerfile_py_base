@@ -3,7 +3,7 @@
 # to build:
 # docker build -t python_base -f Dockerfile_base .
 
-FROM  python:3.6-stretch
+FROM  python:3.10-bullseye
 MAINTAINER Noam Cohen "cnoam@technion.ac.il"
 
 # add /usr/bin/time since the bash version is not good for my needs

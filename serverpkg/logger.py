@@ -26,7 +26,9 @@ class Logger:
             logging.error("Failed creating %s. Check directory permissions" % self.log_path)
             #raise
 
-        self._check_writable()
+        # do NOT check if the folder is writable since if there are many workers, they will
+        # try to do it at the same time and fail.
+        # self._check_writable()
         self.logger = self._init_logger(name)
 
 

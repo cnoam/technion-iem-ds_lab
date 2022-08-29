@@ -23,9 +23,15 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from serverpkg.spark.SparkResources import SparkResources
 from serverpkg.spark.queries import SparkError
 
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
+rate_limiter = None
+REDIS_URL="storage" # the name as we know it in the docker-compose file
 
 def _configure_app():
     global scheduler
+    global rate_limiter
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
     data_path = os.environ['CHECKER_DATA_DIR']
 
@@ -75,6 +81,12 @@ def _configure_app():
                                             livy_pass=app.config['livy_password'],
                                             allowed_submitters=app.config['allowed_submitter_id']
                                             )
+
+    # The limiter needs persistent storage.
+    # We use a REDIS server (in another docker container)
+    rate_limiter = Limiter(app, key_func=get_remote_address,
+                           storage_uri=f"redis://{REDIS_URL}:6379",
+                           default_limits=["2000 per day", "60 per hour"])
 
 class SanityError(Exception):
     pass
@@ -402,6 +414,7 @@ def delete_spark_batch():
 
 
 @app.route('/spark/logs')
+@rate_limiter.limit("1 per minute")
 def get_spark_logs():
     """ get the logs from an application running in spark server.
     """
