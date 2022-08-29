@@ -10,6 +10,6 @@ def on_starting(server):
     print("gunicorn hook: on_starting")
     one_time_init()
 
-
-def post_worker_init(worker):
-    print("Worker has been initialized. Worker Process id –>", worker.pid)
+#
+# def post_worker_init(worker):
+#     print("Worker has been initialized. Worker Process id=", worker.pid)
