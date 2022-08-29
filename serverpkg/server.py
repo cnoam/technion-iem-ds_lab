@@ -28,6 +28,7 @@ from flask_limiter.util import get_remote_address
 
 rate_limiter = None
 REDIS_URL="storage" # the name as we know it in the docker-compose file
+rate_limiter_enabled = True
 
 def _configure_app():
     global scheduler
@@ -86,7 +87,10 @@ def _configure_app():
     # We use a REDIS server (in another docker container)
     rate_limiter = Limiter(app, key_func=get_remote_address,
                            storage_uri=f"redis://{REDIS_URL}:6379",
-                           default_limits=["2000 per day", "60 per hour"])
+                           default_limits=["2000 per day", "60 per hour"],
+                           enabled=rate_limiter_enabled)
+
+    logger.info("Exiting _configure_app")
 
 class SanityError(Exception):
     pass
@@ -146,6 +150,7 @@ def one_time_init():
     rm = app.config['spark_rm']
     scheduler.add_job(rm.update_running_apps, 'interval', seconds=SparkResources.SPARK_POLLING_INTERVAL_sec)
     #one_time_init_called = True
+    logger.info("Exiting one_time_config")
 
 logger = Logger(__name__).logger
 

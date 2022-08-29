@@ -5,4 +5,10 @@ mkdir -p ./logs
 export CHECKER_LOG_DIR=./logs
 export SPARK_CLUSTER_NAME=spark96224
 export LIVY_PASS=%Qq12345678
-gunicorn -b 0.0.0.0:8000 --workers 55 --timeout 20 --log-level debug serverpkg.server:app
+export SPARK_PKEY_PATH=./checker_data/data/96224/spark_client
+gunicorn -b 0.0.0.0:8000 \
+         --workers 10 \
+         --timeout 20 \
+         --log-level debug \
+         -c  serverpkg/gunicorn_config.py \
+         serverpkg.server:app
