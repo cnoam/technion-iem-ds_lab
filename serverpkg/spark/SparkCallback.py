@@ -16,7 +16,6 @@ class SparkCallback:
         :param cb: optional callable
         """
         self.next_cb = cb
-        self.batch_id = None
         self.sender = sender
         self.rm = resource_m
         if sender is None or len(sender) < 2:
@@ -27,9 +26,9 @@ class SparkCallback:
         stdout_s = d['stdout']
         exit_code = d['exit_code']
         if exit_code == 0:
-            self._parse_batch_id(stdout_str=stdout_s)
-            # add the new batch_id only if success
-            self.rm.add_batch_id(user_id=self.sender, batch_id=self.batch_id)
+            b_id = self._parse_batch_id(stdout_str=stdout_s)
+            if b_id is not None:
+                self.rm.add_batch_id(user_id=self.sender, batch_id=b_id)
         if self.next_cb:
             self.next_cb()
 
@@ -39,8 +38,9 @@ class SparkCallback:
         matches = re.findall('^BATCH ID = (\d+)', stdout_str, flags=re.MULTILINE)
         if len(matches) == 0:
             logger.warning("batch ID not found in stdout")
+            return None
         else:
-            self.batch_id = matches[0]
+            return matches[0]
 
 
     def __call__(self, *args, **kwargs):
