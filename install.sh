@@ -1,17 +1,20 @@
 #!/bin/bash -eu
 # Install the needed packages to run the homework checker
-# The argument USE_LANG can be }
+# The argument USE_LANG can be {python, spark, cpp, java, xv6}
 
 # this script has to run in the git repo root directory.
 USE_LANG=$1
 
 
 echo Cloning repo of per-course code and data
-git clone https://github.com/noam1023/technion_checker_data.git checker_data
+git clone https://github.com/cnoam/technion_checker_data.git checker_data
 
 echo Installing Checker on ubuntu flavoured machine
 sudo apt-get update -y && sudo apt-get upgrade -y
-sudo apt-get install -y docker.io
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+rm get-docker.sh
+sudo apt install -y docker-compose
 mkdir -p ./data/logs
 
 # Before using docker commands, you need to add yourself to the docker group:
@@ -28,6 +31,8 @@ set -e
 case $USE_LANG in
    python|spark)
    docker build -t python_base -f Dockerfile_py_base .
+   docker tag python_base:latest server
+   cd scripts && source ./declare_env
    ;;
    
    cpp)
