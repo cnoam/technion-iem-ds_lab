@@ -1,10 +1,6 @@
 import os
 import logging
-
-
-def _in_docker():
-    with open('/proc/1/cgroup', 'rt') as ifh:
-        return 'docker' in ifh.read()
+import utils
 
 
 class Logger:
@@ -14,7 +10,7 @@ class Logger:
     """
 
     def __init__(self, name):
-        if not _in_docker():
+        if not utils.in_docker():
             self.log_path = "./logs/"
         else:
             self.log_path = os.environ['CHECKER_LOG_DIR']  # "/logs"

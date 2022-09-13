@@ -213,7 +213,7 @@ def unauthorized_message(e):
 @app.route('/',methods = ['GET'])
 def index():
     import utils
-    footer_text = 'commit id: {}'.format(utils.commitId())
+    footer_text = 'commit id: {}'.format(utils.version_string())
     return render_template('index.html', running_locally=_running_on_dev_machine(),  motd = Motd().get_message(), footer= footer_text)
 
 

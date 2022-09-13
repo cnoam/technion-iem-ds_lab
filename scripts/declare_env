@@ -5,9 +5,17 @@
 # 
 #http://jobs.eastus.cloudapp.azure.com/
 #mkdir -p ./logs
+
+if [ "${BASH_SOURCE[0]}" -ef "$0" ]
+then
+    echo "Hey, you should source this script, not execute it!"
+    exit 1
+fi
 export CHECKER_LOG_DIR=./logs
 export CLUSTER_NAME=spark96224
 export LIVY_PASS=%Qq12345678
-
+export SECRET_SIG=
 # path to the key file.
 export SPARK_PKEY_PATH=/data/data/96224/spark_client
+export STORAGE_NAME=noamcluster1hdistorage
+export CHECKER_DATA_DIR=$PWD/../checker_data

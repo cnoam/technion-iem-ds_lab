@@ -1,3 +1,6 @@
 #!/bin/bash
-docker-compose restart
+
+# using 'restart' will keep using the old image. This is bad when we want to get the new one
+docker-compose down
+docker-compose up -d
 

@@ -35,8 +35,20 @@ def memoize(func):
 
     return wrapped
 
+
+def version_string():
+    """Try to get the commit ID.
+    If running in docker, it is not available, so try using an env var"""
+    if in_docker():
+        import version
+        return version.commit_id
+    else:
+        return commitId()
+
+
 def commitId() -> str:
-    """ try to get the current git commit Id
+    """ try to get the current git commit Id.
+    This will NOT run when inside a docker container.
     :return short commit ID or empty string"""
     import subprocess
     id = ''
@@ -56,6 +68,16 @@ def load_allowed_submitters_id(fname: str)-> set:
     except:
         pass
     return s
+
+
+def in_docker():
+    """:return True if running inside a docker container
+    https://www.baeldung.com/linux/is-process-running-inside-container
+    """
+    with open('/proc/1/sched', 'rt') as ifh:
+        line = ifh.readline()
+        return 'systemd' not in line
+
 
 if __name__ == "__main__":
 
