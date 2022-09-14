@@ -160,10 +160,22 @@ def get_spark_jobs():
     return json.dumps(result,indent=4), HTTPStatus.OK,  {'Content-Type': 'application/json' }
 
 
-@app.route("/spark/drop_running_jobs", methods=['GET'])
+@app.route("/spark/clear_job_list", methods=['GET'])
 @login_required
-def drop_spark_running_jobs():
+def clear_job_list():
     resman = app.config['spark_rm']
     resman.ongoing_tasks.clear()
     return "drop runing jobs table: OK", HTTPStatus.OK
 
+
+@app.route("/spark/purge_running_jobs", methods=['GET'])
+@login_required
+def spark_purge_running_jobs():
+    resman = app.config['spark_rm']
+    t = resman.query.get_spark_app_list()
+    v = [x for x in t if x['state'] == 'running']
+    for victim in  v:
+        id = victim['id']
+        logger.info(f"Deleting app with batchID {id}")
+        resman.query.delete_batch(id)
+    return f"Deleted {len(v)} running jobs",  HTTPStatus.OK
