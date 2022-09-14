@@ -5,7 +5,7 @@ from serverpkg.spark.queries import SparkAdminQuery
 from serverpkg.logger import Logger
 logger = Logger(__name__).logger
 
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 class SparkResources:
     """Manage number of the running Spark applications.
@@ -36,10 +36,6 @@ class SparkResources:
                                      cluster_url_https=cluster_url_https,
                                      pkey=priv_key_path,
                                      livy_password=livy_pass)
-
-
-    def _is_running_app(self, appId: str)-> bool:
-        pass
 
     def allow_user_to_submit(self, user_id):
         """check if the user may submit new job.
@@ -110,14 +106,15 @@ class SparkResources:
         and use this data to update the state for ALL users."""
 
         # https://docs.microsoft.com/en-us/rest/api/synapse/data-plane/spark-job-definition/execute-spark-job-definition?tabs=HTTP#livystates
-        #terminal_state = ('dead','error','killed', 'shutting_down', 'success')
+        terminal_state = ('dead','error','killed', 'shutting_down', 'success')
         try:
             sessions = self.query.get_spark_app_list()
         except ConnectionError:
-            logger.info("update_running_apps: Connection error to Spark server")
+            logger.error("update_running_apps: Connection error to Spark server")
             return
 
         local_app_and_batch_id = set(self.ongoing_tasks.values())
+        remote_batch_id = set([x['id'] for x in sessions if x['appId'] is not None])
 
         # some applicationID will be removed
         local_batch_id = set([x for x in local_app_and_batch_id if not x.startswith('app')])
@@ -125,6 +122,8 @@ class SparkResources:
 
         # we cannot rely on Spark/Livy to report ALL the terminated jobs since after a while they are gone from the list
         running_spark_app_ids = set([x['appId'] for x in sessions if x['state'] in ('starting', 'running')])
+
+        completed_app_id_to_remove = set([x['appId'] for x in sessions if x['state'] in terminal_state])
 
         # identify the new appID by their batch ID that is still in the local list.
         # we don't take 'starting' applications since sometime the appId is None
@@ -134,7 +133,7 @@ class SparkResources:
             self.add_app_id(uid,pair[0], pair[1])
 
         app_id_to_remove = local_app_id - (local_app_id.intersection(running_spark_app_ids))
-
+        app_id_to_remove = app_id_to_remove.union(completed_app_id_to_remove)
         logger.debug("running_spark_app_ids: " + str(running_spark_app_ids))
         logger.debug("local_app_id: " + str(local_app_id))
         logger.debug("app_id_to_remove: " + str(app_id_to_remove))
@@ -142,6 +141,13 @@ class SparkResources:
         for id_ in app_id_to_remove:
             uid = self.ongoing_tasks.get_key_from_value(id_)
             self.remove_job(uid,id_)
+
+        # any batch Id that already have corresponding appId (in whatever state) can be safely removed.
+        # this is done to try and eliminate orphan local batch id.
+        for b in remote_batch_id:
+            n = self.ongoing_tasks.remove_v(b)
+            if n > 0:
+                logger.debug(f"removed batchID {b} (based on remote_batch_id)")
 
     def dump_state(self) -> str:
         return str(self.ongoing_tasks)
