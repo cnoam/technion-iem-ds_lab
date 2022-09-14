@@ -1,3 +1,8 @@
+from functools import wraps
+from time import time
+import logging
+import re
+
 
 def wrap_html_source(text):
     """
@@ -8,9 +13,6 @@ def wrap_html_source(text):
     return "<html><pre><code> " + text +  "</code></pre></html>"
 
 
-from functools import wraps
-from time import time
-import logging
 def measure(func):
     @wraps(func)
     def _time_it(*args, **kwargs):
@@ -79,8 +81,18 @@ def in_docker():
         return 'systemd' not in line
 
 
-if __name__ == "__main__":
+def replace_url_to_link(value):
+    # Replace url to link
+    # https://gist.github.com/guillaumepiot/4539986
+    urls = re.compile(r"((https?):((//)|(\\\\))+[\w\d:#@%/;$()~_?\+-=\\\.&]*)", re.MULTILINE|re.UNICODE)
+    value = urls.sub(r'<a href="\1" target="_blank">\1</a>', value)
+    # Replace email to mailto
+    urls = re.compile(r"([\w\-\.]+@(\w[\w\-]+\.)+[\w\-]+)", re.MULTILINE|re.UNICODE)
+    value = urls.sub(r'<a href="mailto:\1">\1</a>', value)
+    return value
 
+
+if __name__ == "__main__":
     @measure
     def hello():
         from time import sleep

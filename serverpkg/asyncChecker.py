@@ -1,7 +1,7 @@
 import re
 import subprocess
 import threading
-
+import utils
 from .logger import Logger
 from .server_codes import ExitCode
 
@@ -134,6 +134,10 @@ class AsyncChecker(threading.Thread):
                 logger.warning("cannot decode stderr." + str(ex))
                 err = "There was a problem decoding the output of the program. Make sure there are no special characters at the output"
 
+            # try to convert links to clickable - assuming the user will see an html page with the contents
+            # of stdout.
+            if out is not None:
+                out = utils.replace_url_to_link(out)
             self.job_db.mark_job_completed(self.job.job_id,
                                            #status = self.job.status,
                                            exit_code= exit_code,
