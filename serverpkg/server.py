@@ -28,14 +28,14 @@ from flask_limiter.util import get_remote_address
 
 rate_limiter = None
 REDIS_URL="storage" # the name as we know it in the docker-compose file
-rate_limiter_enabled = False
+rate_limiter_enabled = True
 if rate_limiter_enabled and not utils.in_docker():
     logging.warning("----------------------\nREDIS is needed for rate limiting. Is it running?\n----------------")
 
 def _configure_app():
     global scheduler
     global rate_limiter
-    app.config['SERVER_FQDN'] = 'jobs.eastus.cloudapp.azure.com'
+    app.config['SERVER_FQDN'] = 'jobs.eastus.cloudapp.azure.com' # TODO move to env var
     if _running_on_dev_machine():
         app.config['SERVER_FQDN'] = 'localhost:8000'
 
@@ -450,7 +450,7 @@ def get_spark_logs():
         body, status = query_.get_logs(appId)
         if status == HTTPStatus.OK:
             body = f"""<html><body><br>
-                    <a href=https://spark96224.azurehdinsight.net/sparkhistory/history/{appId}/1>Take a look at the job's stats!</a>
+                <!--    <a href=https://spark96224.azurehdinsight.net/sparkhistory/history/{appId}/1>Take a look at the job's stats!</a> -->
                     <br>
                     From now on you can use this link to get quicker results: <br>
                     <a href=http://{app.config['SERVER_FQDN']}/spark/logs?appId={appId}> http://{app.config['SERVER_FQDN']}/spark/logs?appId={appId}</a>

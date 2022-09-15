@@ -12,3 +12,5 @@ CTestTestfile.cmake
 venv/
 instance/
 __pycache__/
+logs/
+*.db
