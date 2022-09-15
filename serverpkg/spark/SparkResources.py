@@ -115,6 +115,7 @@ class SparkResources:
 
         local_app_and_batch_id = set(self.ongoing_tasks.values())
         remote_batch_id = set([x['id'] for x in sessions if x['appId'] is not None])
+        remote_app_id = set([x['appId'] for x in sessions if x['appId'] is not None])
 
         # some applicationID will be removed
         local_batch_id = set([x for x in local_app_and_batch_id if not x.startswith('app')])
@@ -125,6 +126,10 @@ class SparkResources:
 
         completed_app_id_to_remove = set([x['appId'] for x in sessions if x['state'] in terminal_state])
 
+        orphan_app_id = local_app_id - remote_app_id
+        if len(orphan_app_id) > 0:
+            logger.debug("Orphan appID:", str(orphan_app_id))
+
         # identify the new appID by their batch ID that is still in the local list.
         # we don't take 'starting' applications since sometime the appId is None
         pairs = set([(x['id'],x['appId']) for x in sessions  if str(x['id']) in local_batch_id and x['state'] == 'running'])
@@ -132,8 +137,10 @@ class SparkResources:
             uid = self.ongoing_tasks.get_key_from_value(pair[0])
             self.add_app_id(uid,pair[0], pair[1])
 
+
         app_id_to_remove = local_app_id - (local_app_id.intersection(running_spark_app_ids))
         app_id_to_remove = app_id_to_remove.union(completed_app_id_to_remove)
+        app_id_to_remove = app_id_to_remove.union(orphan_app_id)
         logger.debug("running_spark_app_ids: " + str(running_spark_app_ids))
         logger.debug("local_app_id: " + str(local_app_id))
         logger.debug("app_id_to_remove: " + str(app_id_to_remove))
