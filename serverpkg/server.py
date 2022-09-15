@@ -28,11 +28,17 @@ from flask_limiter.util import get_remote_address
 
 rate_limiter = None
 REDIS_URL="storage" # the name as we know it in the docker-compose file
-rate_limiter_enabled = True
+rate_limiter_enabled = False
+if rate_limiter_enabled and not utils.in_docker():
+    logging.warning("----------------------\nREDIS is needed for rate limiting. Is it running?\n----------------")
 
 def _configure_app():
     global scheduler
     global rate_limiter
+    app.config['SERVER_FQDN'] = 'jobs.eastus.cloudapp.azure.com'
+    if _running_on_dev_machine():
+        app.config['SERVER_FQDN'] = 'localhost:8000'
+
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
     data_path = os.environ['CHECKER_DATA_DIR']
 
@@ -87,7 +93,7 @@ def _configure_app():
     # We use a REDIS server (in another docker container)
     rate_limiter = Limiter(app, key_func=get_remote_address,
                            storage_uri=f"redis://{REDIS_URL}:6379",
-                           default_limits=["2000 per day", "60 per hour"],
+                           default_limits=["2000 per day", "200 per hour"],
                            enabled=rate_limiter_enabled)
 
     logger.info("Exiting _configure_app")
@@ -426,7 +432,7 @@ def get_spark_logs():
     from serverpkg.spark import queries
     appId=request.args.get('appId') # application_1624861312520_0009
     batchId=request.args.get('batchId') # 42
-
+    logger.debug(f"get_spark_logs(batch={batchId}, appId={appId})")
     if appId is None and batchId is None:
         return "use ?appId=application_1624861312520_0009 or ?batchId=4", HTTPStatus.BAD_REQUEST
 
@@ -441,12 +447,26 @@ def get_spark_logs():
             if appId is None:
                 return f"There is no AppId yet for batch {batchId}. Please try again later", HTTPStatus.OK
 
-        response = query_.get_logs(appId)
+        body, status = query_.get_logs(appId)
+        if status == HTTPStatus.OK:
+            body = f"""<html><body><br>
+                    <a href=https://spark96224.azurehdinsight.net/sparkhistory/history/{appId}/1>Take a look at the job's stats!</a>
+                    <br>
+                    From now on you can use this link to get quicker results: <br>
+                    <a href=http://{app.config['SERVER_FQDN']}/spark/logs?appId={appId}> http://{app.config['SERVER_FQDN']}/spark/logs?appId={appId}</a>
+                    <br><hr>
+                    <pre><code>
+                    {body}
+                    </code></pre>
+                    </body>
+                    </html>
+                    """
+
     except ConnectionError:
         return "Could not connect to the Spark server", HTTPStatus.BAD_GATEWAY
     except queries.SparkError as ex:
         return "Spark server returned unexpected value or did not find the requested batch:  "+ str(ex), HTTPStatus.NOT_FOUND
-    return response
+    return body, status
 
 
 def handle_file(package_under_test,course_number, ex_type, ex_number, reference_input, reference_output, completionCb):

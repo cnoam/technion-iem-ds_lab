@@ -165,7 +165,7 @@ def get_spark_jobs():
 def clear_job_list():
     resman = app.config['spark_rm']
     resman.ongoing_tasks.clear()
-    return "drop runing jobs table: OK", HTTPStatus.OK
+    return "drop running jobs table: OK", HTTPStatus.OK
 
 
 @app.route("/spark/purge_running_jobs", methods=['GET'])
