@@ -147,10 +147,14 @@ class SparkAdminQuery:
             logger.error("SSH authentication error" + str(ex))
             err = utils.wrap_html_source(str(ex)), HTTPStatus.SERVICE_UNAVAILABLE
         except Exception as ex:
-            err = utils.wrap_html_source(str(ex)), HTTPStatus.INTERNAL_SERVER_ERROR
+            logger.error("ssh command returned exception: ",ex)
+            msg = str(ex)
+            if len(msg) == 0:
+                msg = "Communication error with the server. This should not happen. "
+            err = msg, HTTPStatus.INTERNAL_SERVER_ERROR
         finally:
             logger.info("get_logs returning") # added for timing measurement of the call
-        return err if err is not None else (utils.wrap_html_source(output), HTTPStatus.OK)
+        return err if err is not None else (output, HTTPStatus.OK)
 
     def delete_batch(self, batchId):
         """delete a spark job.
