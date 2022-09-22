@@ -136,6 +136,7 @@ def one_time_init():
     """This function should be called once the server is up, and only once.
     If not done like this, gunicorn will start K workers and each will have its own scheduler
     """
+    logger.info(f"Entering one_time_config. PID = {os.getpid()}")
     global _job_status_db
     global one_time_init_called
     scheduler = BackgroundScheduler()
@@ -425,7 +426,7 @@ def delete_spark_batch():
 
 
 @app.route('/spark/logs')
-@rate_limiter.limit("1 per minute")
+@rate_limiter.limit("3 per minute")
 def get_spark_logs():
     """ get the logs from an application running in spark server.
     """
@@ -454,6 +455,8 @@ def get_spark_logs():
                     <br>
                     From now on you can use this link to get quicker results: <br>
                     <a href=http://{app.config['SERVER_FQDN']}/spark/logs?appId={appId}> http://{app.config['SERVER_FQDN']}/spark/logs?appId={appId}</a>
+                    <br><br>                    
+                    <a href=http://{app.config['SERVER_FQDN']}/spark/logs/stderr?appId={appId}>CLICK HERE TO SEE stderr</a>
                     <br><hr>
                     <pre><code>
                     {body}
@@ -461,6 +464,40 @@ def get_spark_logs():
                     </body>
                     </html>
                     """
+
+    except ConnectionError:
+        return "Could not connect to the Spark server", HTTPStatus.BAD_GATEWAY
+    except queries.SparkError as ex:
+        return "Spark server returned unexpected value or did not find the requested batch:  "+ str(ex), HTTPStatus.NOT_FOUND
+    return body, status
+
+
+
+@app.route('/spark/logs/stderr')
+@rate_limiter.limit("3 per minute")
+def get_spark_logs_stderr():
+    """ get the logs from an application running in spark server.
+    """
+    from serverpkg.spark import queries
+    appId=request.args.get('appId') # application_1624861312520_0009
+    batchId=request.args.get('batchId') # 42
+    logger.debug(f"get_spark_logs(batch={batchId}, appId={appId})")
+    if appId is None and batchId is None:
+        return "use ?appId=application_1624861312520_0009 or ?batchId=4", HTTPStatus.BAD_REQUEST
+
+    query_ = app.config['spark_rm'].query
+    try:
+        if batchId:
+            try:
+                batchId = int(batchId)
+            except ValueError:
+                return "batch Id must be integer", HTTPStatus.BAD_REQUEST
+            appId = query_.get_appId_from_batchId(batchId)
+            if appId is None:
+                return f"There is no AppId yet for batch {batchId}. Please try again later", HTTPStatus.OK
+
+        body, status = query_.get_logs(appId, use_stdout= False)
+        body = utils.wrap_html_source(body)
 
     except ConnectionError:
         return "Could not connect to the Spark server", HTTPStatus.BAD_GATEWAY

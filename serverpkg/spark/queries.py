@@ -125,18 +125,20 @@ class SparkAdminQuery:
 # why does it take 30 sec in python?
 
 
-    def get_logs(self, appId):
+    def get_logs(self, appId, use_stdout = True):
         """ get the logs of the application from the Spark cluster.
             This function uses YARN log aggregation.
 
         :param cluster_url_name: URL of the spark cluster
         :param appId: unique application ID created when submitting a batch to the spark master
+        :param use_stdout: True if stdout logs, False if stderr logs
         :return: tuple (reply body, HTTP status code)
         """
-        # yarn logs  -am -1    -log_files stdout -applicationId application_1624861312520_0009
+        # yarn logs  -am -1    -log_files stdout|stderr -applicationId application_1624861312520_0009
         # get the log of stdout from the last run from this appId
-        cmd = f"yarn logs  -am -1 -log_files stdout -applicationId {appId}"
-        logger.info(f"get_logs({appId}): connecting using SSH to Spark node {self.cluster_url_ssh_name}")
+        stream = 'stdout' if use_stdout else 'stderr'
+        cmd = f"yarn logs  -am -1 -log_files {stream} -applicationId {appId}"
+        logger.info(f"get_logs(stdout = {use_stdout}, {appId}): connecting using SSH to Spark node {self.cluster_url_ssh_name}")
         err = None
         try:
             output = self._ssh_blocking_command(command=cmd, timeout = None)
