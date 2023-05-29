@@ -1,4 +1,4 @@
-#!/bin/bash -eu
+#!/bin/bash -eux
 # Install the needed packages to run the homework checker
 # The argument USE_LANG can be {python, spark, cpp, java, xv6}
 
@@ -26,7 +26,6 @@ newgrp docker
 # set the docker daemon to enabled so it starts on boot
 sudo systemctl enable docker
 set -e
-
 echo "commit_id='$(git rev-parse --short HEAD)'" > version.py
 # Currently need to manually build the dependency images
 case $USE_LANG in
@@ -35,29 +34,29 @@ case $USE_LANG in
    docker tag python_base:latest server
    cd scripts && source ./declare_env && ln -s docker-compose_spark.yml compose.yml
    ;;
-   
+
    cpp)
    docker build -t server_cpp -f Dockerfile_cpp .
    exit 2 # need to prepare the right compose file
    ;;
-   
+
    java)
    docker build -t py_java -f Dockerfile_py_java .
    exit 2 # need to prepare the right compose file
    ;;
-   
+
    xv6)
    docker build -t python_base -f Dockerfile_py_base .
    docker build -t server_xv6 -f Dockerfile_xv6 .
    ln -s docker-compose_xv6.yml scripts/compose.yml
    ;;
-   
-   
+
+
    *)
    echo bad argument value.
    exit 1
 esac
-   
+
 
 
 # TODO: add log rotation (to the disk will not be filled)
@@ -70,3 +69,4 @@ mkdir -p $CHECKER_DATA_DIR/logs
 chmod  777 $CHECKER_DATA_DIR/logs
 
 echo "DONE."
+cd scripts && docker compose up -d
