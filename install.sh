@@ -27,26 +27,29 @@ newgrp docker
 sudo systemctl enable docker
 set -e
 
+echo "commit_id='$(git rev-parse --short HEAD)'" > version.py
 # Currently need to manually build the dependency images
 case $USE_LANG in
    python|spark)
    docker build -t python_base -f Dockerfile_py_base .
    docker tag python_base:latest server
-   cd scripts && source ./declare_env
+   cd scripts && source ./declare_env && ln -s docker-compose_spark.yml compose.yml
    ;;
    
    cpp)
    docker build -t server_cpp -f Dockerfile_cpp .
+   exit 2 # need to prepare the right compose file
    ;;
    
    java)
    docker build -t py_java -f Dockerfile_py_java .
+   exit 2 # need to prepare the right compose file
    ;;
    
    xv6)
    docker build -t python_base -f Dockerfile_py_base .
-   docker build -t server_cpp -f Dockerfile_cpp .
    docker build -t server_xv6 -f Dockerfile_xv6 .
+   ln -s docker-compose_xv6.yml scripts/compose.yml
    ;;
    
    
@@ -62,5 +65,8 @@ esac
 
 echo Adding path to checker_data to .bashrc
 echo export CHECKER_DATA_DIR=`pwd`/checker_data >> ~/.bashrc
+export CHECKER_DATA_DIR=`pwd`/checker_data
+mkdir -p $CHECKER_DATA_DIR/logs
+chmod  777 $CHECKER_DATA_DIR/logs
 
 echo "DONE."

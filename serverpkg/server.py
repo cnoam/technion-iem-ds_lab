@@ -26,9 +26,10 @@ from serverpkg.spark.queries import SparkError
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
+USE_SPARK = False
 rate_limiter = None
 REDIS_URL="storage" # the name as we know it in the docker-compose file
-rate_limiter_enabled = True
+rate_limiter_enabled = False
 if rate_limiter_enabled and not utils.in_docker():
     logging.warning("----------------------\nREDIS is needed for rate limiting. Is it running?\n----------------")
 
@@ -51,11 +52,7 @@ def _configure_app():
     app.config['assignment_config_file'] = data_path + '/hw_settings.json'
     app.config['database_dir'] = os.environ['CHECKER_LOG_DIR']
 
-    # app.config['LDAP_HOST'] = 'ldap://ccldap.technion.ac.il'
-    # app.config['LDAP_BASE_DN'] = 'ou=tx,dc=technion,dc=ac,dc=il'
-    # app.config['LDAP_USERNAME'] = 'cn=cnoam,ou=Users,dc=il'
-    # app.config['LDAP_PASSWORD'] = '--'
-    app.secret_key = b'3456o00sdf045'
+    app.secret_key = b'3456o00sdptgq'
 
     # we may want to limit who can submit jobs.
     # if the set is empty - no limit. if non empty, it contains the ID of the person allowed.
@@ -64,30 +61,25 @@ def _configure_app():
     if len(app.config['allowed_submitter_id']) == 0:
         logging.warning("There is no limitation on submitter ID. Anyone can submit jobs.")
 
-    # Try to get SPARK related vars, but don't fail here if we don't have it
-    app.config['cluster_name'] = os.getenv('SPARK_CLUSTER_NAME')
-    app.config['cluster_url_ssh'] = f"{app.config['cluster_name']}-ssh.azurehdinsight.net"
-    app.config['cluster_url_https'] = f"https://{app.config['cluster_name']}.azurehdinsight.net"
-    app.config['livy_password'] = os.getenv('LIVY_PASS')
+    if USE_SPARK:
+        # Try to get SPARK related vars, but don't fail here if we don't have it
+        app.config['cluster_name'] = os.getenv('SPARK_CLUSTER_NAME')
+        app.config['cluster_url_ssh'] = f"{app.config['cluster_name']}-ssh.azurehdinsight.net"
+        app.config['cluster_url_https'] = f"https://{app.config['cluster_name']}.azurehdinsight.net"
+        app.config['livy_password'] = os.getenv('LIVY_PASS')
+        if app.config['cluster_name'] is None:
+            raise KeyError('cluster_name')
+        if app.config['livy_password'] is None:
+            raise KeyError('livy_password')
 
-    # todo: this should be checked only for projects using spark.
-    if app.config['cluster_name'] is None:
-        #return "Internal Error: missing SPARK_CLUSTER_NAME env var in the server", HTTPStatus.INTERNAL_SERVER_ERROR
-        raise KeyError('cluster_name')
-    if app.config['livy_password'] is None:
-        #return "Internal Error: missing LIVY_PASS env var in the server", HTTPStatus.INTERNAL_SERVER_ERROR
-        raise KeyError('livy_password')
-
-    app.config['spark_private_key_path'] = os.getenv('SPARK_PKEY_PATH')  # absolute file path to the private key file. Needed for ssh auth.
-
-    # This is not a config, so maybe move it from here
-    app.config['spark_rm'] = SparkResources(cluster_name=app.config['cluster_name'],
-                                            cluster_url_ssh=app.config['cluster_url_ssh'],
-                                            cluster_url_https=app.config['cluster_url_https'],
-                                            priv_key_path=app.config['spark_private_key_path'],
-                                            livy_pass=app.config['livy_password'],
-                                            allowed_submitters=app.config['allowed_submitter_id']
-                                            )
+        app.config['spark_private_key_path'] = os.getenv('SPARK_PKEY_PATH')  # absolute file path to the private key file. Needed for ssh auth.
+        app.config['spark_rm'] = SparkResources(cluster_name=app.config['cluster_name'],
+                                                cluster_url_ssh=app.config['cluster_url_ssh'],
+                                                cluster_url_https=app.config['cluster_url_https'],
+                                                priv_key_path=app.config['spark_private_key_path'],
+                                                livy_pass=app.config['livy_password'],
+                                                allowed_submitters=app.config['allowed_submitter_id']
+                                                )
 
     # The limiter needs persistent storage.
     # We use a REDIS server (in another docker container)

@@ -1,9 +1,9 @@
 # build an image for homework on XV6 educational operating system.
 # This is built on top of the Checker code
 
-FROM  server_cpp
+FROM  python_base
 
-RUN apt-get update && apt-get install -y qemu
+RUN apt-get update && apt-get install -y build-essential g++ qemu
 
 WORKDIR /app
 EXPOSE 8000

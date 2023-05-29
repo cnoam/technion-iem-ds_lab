@@ -1,0 +1,17 @@
+# setup for XV6 
+#
+# Strongly recommended: Before deploying, run
+#  docker-compose config | grep WARN
+version: '3'
+services:
+  server:
+    image: server_xv6
+    restart: unless-stopped
+    ports:
+      - '80:8000'
+    environment:
+      CHECKER_DATA_DIR : /data
+      CHECKER_LOG_DIR : /logs
+    volumes:
+      - $CHECKER_DATA_DIR/logs:/logs
+      - $CHECKER_DATA_DIR:/data
