@@ -3,7 +3,7 @@
 
 FROM  python_base
 
-RUN apt-get update && apt-get install -y build-essential g++ qemu
+RUN apt-get update && apt-get install -y build-essential g++ qemu qemu-kvm
 
 WORKDIR /app
 EXPOSE 8000
