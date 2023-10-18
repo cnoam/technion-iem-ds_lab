@@ -18,7 +18,7 @@ requests==2.31.0
 #scipy==1.7.0
 six==1.16.0
 #sklearn==0.0
-urllib3==1.26.6
+urllib3==1.26.18
 Werkzeug==2.2.3
 flask_login
 #flask_simpleldap==1.4.0
